@@ -21,8 +21,7 @@
 
 inventory = {"tree-seed", "shovel"}
 room_inventory = {"block", "scooter", "broken-torch"}
-room_targets = {"hole"}
-hole_in_the_wall = True
+room_targets = {"hole", "dirt"}
 
 while True:
     command = input("What do you want to do? ")
@@ -43,10 +42,13 @@ while True:
                 print(f"There's no {item} in your inventory.")
         case ["look"]:
             print("You look around.")
-            if hole_in_the_wall:
-                print("There's a hole in the wall!")
-            else:
-                print("You fixed the hole. You win the game!")
+            for target in room_targets:
+                if target == "hole":
+                    print("There's a hole in the wall!")
+                elif target == "tree":
+                    print("There's a beautiful tree you planted!")
+                elif target == "dirt":
+                    print("There's dirt on the ground.")
             for item in room_inventory:
                 print(f"You see a {item}.")
         case ["inventory"]:
@@ -64,6 +66,11 @@ while True:
                         room_targets.discard("hole")
                         hole_in_the_wall = False
                         break
+                    elif item == "tree-seed" and target == "dirt":
+                        print("You planted a tree and it grew!")
+                        inventory.discard("tree-seed")
+                        room_targets.discard("dirt")
+                        room_targets.add("tree")
                     else:
                         print("Nothing happened.")
                 else:
