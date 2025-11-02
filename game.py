@@ -60,7 +60,7 @@ while True:
                 if target in room_targets:
                     print(f"You use the {item} on the {target}.")
                     if item == "block" and target == "hole":
-                        print("You used the block to fix the hole in the wall.")
+                        print("You fixed the hole in the wall!")
                         print("You win the game!")
                         inventory.discard("block")
                         room_targets.discard("hole")
