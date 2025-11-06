@@ -39,7 +39,7 @@ class Room:
         for item in self.inventory:
             print(f"You see a {item}.")
 
-    def use(self, item, target):
+    def use(self, inventory, item, target):
         if target in self.targets:
             print(f"You use the {item} on the {target}.")
             if item == "block" and target == "hole":
@@ -72,48 +72,81 @@ class Room:
             return self
 
 
-OVERWORLD = Room()
+class Game:
+    def __init__(self):
+        self.inventory = {"tree-seed", "shovel"}
 
-LAVA_PIT = Room()
-LAVA_PIT.inventory = {"peanut", "apple", "block-one", "block-two", "block-three"}
-LAVA_PIT.targets = {"lava"}
+        OVERWORLD = Room()
+        LAVA_PIT = Room()
+        END = Room()
+        self.current_room = OVERWORLD
 
-END = Room()
-END.inventory = {"block", "scooter", "broken-torch"}
-END.targets = {"hole", "dirt"}
+        OVERWORLD.inventory = {"key"}
+        OVERWORLD.targets = {
+            "crafting-table": {"look": ["You can craft something."]},
+            "door": {
+                "locked": True,
+                "look": {
+                    "locked": {
+                        True: "You see a big metal door. It's locked",
+                        False: "You see a big metal door. It's unlocked.",
+                    }
+                },
+            },
+        }
+        OVERWORLD.paths = {"south": LAVA_PIT}
 
-LAVA_PIT.paths = {"north": OVERWORLD, "south": END}
+        LAVA_PIT.inventory = {
+            "peanut",
+            "apple",
+            "block-one",
+            "block-two",
+            "block-three",
+        }
+        LAVA_PIT.targets = {"lava"}
+        LAVA_PIT.paths = {"north": OVERWORLD, "south": END}
 
-inventory = {"tree-seed", "shovel"}
+        END.inventory = {"block", "scooter", "broken-torch"}
+        END.targets = {"hole", "dirt"}
+        END.paths = {"north": LAVA_PIT}
 
-while True:
-    command = input("What do you want to do? ")
-    match command.split():
-        case ["pickup", item]:
-            if item in END.inventory:
-                print(f"You picked up the {item}.")
-                inventory.add(item)
-                END.inventory.discard(item)
-            else:
-                print(f"There's no {item} in the room.")
-        case ["drop", item]:
-            if item in inventory:
-                print(f"You dropped the {item}.")
-                inventory.discard(item)
-                END.inventory.add(item)
-            else:
-                print(f"There's no {item} in your inventory.")
-        case ["look"]:
-            END.look()
-        case ["inventory"]:
-            print("You check your inventory.")
-            for item in inventory:
-                print(f"You see a {item}.")
-        case ["use", item, "on", target]:
-            if item in inventory:
-                END.use(item, target)
-            else:
-                print(f"You don't have {item} in your inventory.")
-        case ["quit"]:
-            print("Goodbye!")
-            break
+    def run(self):
+        while True:
+            command = input("What do you want to do? ")
+            match command.split():
+                case ["pickup", item]:
+                    if item in self.current_room.inventory:
+                        print(f"You picked up the {item}.")
+                        self.inventory.add(item)
+                        self.current_room.inventory.discard(item)
+                    else:
+                        print(f"There's no {item} in the room.")
+                case ["drop", item]:
+                    if item in self.inventory:
+                        print(f"You dropped the {item}.")
+                        self.inventory.discard(item)
+                        self.current_room.inventory.add(item)
+                    else:
+                        print(f"There's no {item} in your inventory.")
+                case ["look"]:
+                    self.current_room.look()
+                case ["inventory"]:
+                    print("You check your inventory.")
+                    for item in self.inventory:
+                        print(f"You see a {item}.")
+                case ["use", item, "on", target]:
+                    if item in self.inventory:
+                        self.current_room.use(self.inventory, item, target)
+                    else:
+                        print(f"You don't have {item} in your inventory.")
+                case ["walk", direction]:
+                    new_room = self.current_room.move(direction)
+                    if new_room is not self.current_room:
+                        self.current_room = new_room
+                        print(f"You walk {direction}.")
+                case ["quit"]:
+                    print("Goodbye!")
+                    break
+
+
+Game().run()
