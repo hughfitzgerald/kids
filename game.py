@@ -18,26 +18,55 @@
 #     if thing is maris_favorite_things[number_of_the_last_thing]:
 #         print("AND...")
 #     print(f"I love {thing}!")
+import random
+
+
+class Character:
+    def __init__(self):
+        self.name = ""
+        self.current_room = None
+
+    def move(self):
+        random_number = int(random.random() * 4) + 1
+        if random_number == 1:
+            direction = "north"
+        elif random_number == 2:
+            direction = "east"
+        elif random_number == 3:
+            direction = "west"
+        else:
+            direction = "south"
+        if direction in self.current_room.paths:
+            new_room = self.current_room.paths[direction]
+            print(
+                f"{self.name} moved {direction} from {self.current_room.name} to {new_room.name}"
+            )
+            self.current_room = new_room
 
 
 class Room:
     def __init__(self):
+        self.name = ""
         self.inventory = {}
         self.targets = {}
         self.data = {}
         self.paths = {}
 
-    def look(self):
+    def look(self, characters):
         print("You look around.")
         for target in self.targets:
-            if target == "hole":
-                print("There's a hole in the wall!")
-            elif target == "tree":
-                print("There's a beautiful tree you planted!")
-            elif target == "dirt":
-                print("There's dirt on the ground.")
+            print(f"You see a {target}.")
+            # if target == "hole":
+            #     print("There's a hole in the wall!")
+            # elif target == "tree":
+            #     print("There's a beautiful tree you planted!")
+            # elif target == "dirt":
+            #     print("There's dirt on the ground.")
         for item in self.inventory:
             print(f"You see a {item}.")
+        for character in characters:
+            if character.current_room == self:
+                print(f"You see {character.name}")
 
     def use(self, inventory, item, target):
         if target in self.targets:
@@ -81,6 +110,7 @@ class Game:
         END = Room()
         self.current_room = OVERWORLD
 
+        OVERWORLD.name = "Overworld"
         OVERWORLD.inventory = {"key"}
         OVERWORLD.targets = {
             "crafting-table": {"look": ["You can craft something."]},
@@ -96,6 +126,7 @@ class Game:
         }
         OVERWORLD.paths = {"south": LAVA_PIT}
 
+        LAVA_PIT.name = "Lava Pit"
         LAVA_PIT.inventory = {
             "peanut",
             "apple",
@@ -106,9 +137,15 @@ class Game:
         LAVA_PIT.targets = {"lava"}
         LAVA_PIT.paths = {"north": OVERWORLD, "south": END}
 
+        END.name = "End Room"
         END.inventory = {"block", "scooter", "broken-torch"}
         END.targets = {"hole", "dirt"}
         END.paths = {"north": LAVA_PIT}
+
+        CLOREN = Character()
+        CLOREN.name = "Cloren"
+        CLOREN.current_room = OVERWORLD
+        self.characters = {CLOREN}
 
     def run(self):
         while True:
@@ -129,7 +166,7 @@ class Game:
                     else:
                         print(f"There's no {item} in your inventory.")
                 case ["look"]:
-                    self.current_room.look()
+                    self.current_room.look(self.characters)
                 case ["inventory"]:
                     print("You check your inventory.")
                     for item in self.inventory:
@@ -147,6 +184,8 @@ class Game:
                 case ["quit"]:
                     print("Goodbye!")
                     break
+            for character in self.characters:
+                character.move()
 
 
 Game().run()
