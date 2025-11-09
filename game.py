@@ -22,9 +22,9 @@ import random
 
 
 class Character:
-    def __init__(self):
-        self.name = ""
-        self.current_room = None
+    def __init__(self, name="", current_room=None):
+        self.name = name
+        self.current_room = current_room
 
     def move(self):
         random_number = int(random.random() * 4) + 1
@@ -37,31 +37,26 @@ class Character:
         else:
             direction = "south"
         if direction in self.current_room.paths:
-            new_room = self.current_room.paths[direction]
+            new_room = self.current_room.paths[direction]["destination"]
             print(
-                f"{self.name} moved {direction} from {self.current_room.name} to {new_room.name}"
+                f"{self.name} moved {direction} from {self.current_room.name} to {new_room.name} because he can walk through walls."
             )
             self.current_room = new_room
 
 
 class Room:
-    def __init__(self):
-        self.name = ""
-        self.inventory = {}
-        self.targets = {}
-        self.data = {}
-        self.paths = {}
+    def __init__(self, name="", inventory={}, targets={}, data={}, paths={}):
+        self.name = name
+        self.inventory = inventory
+        self.targets = targets
+        self.data = data
+        self.paths = paths
+        self.win = False
 
     def look(self, characters):
         print("You look around.")
         for target in self.targets:
             print(f"You see a {target}.")
-            # if target == "hole":
-            #     print("There's a hole in the wall!")
-            # elif target == "tree":
-            #     print("There's a beautiful tree you planted!")
-            # elif target == "dirt":
-            #     print("There's dirt on the ground.")
         for item in self.inventory:
             print(f"You see a {item}.")
         for character in characters:
@@ -73,10 +68,9 @@ class Room:
             print(f"You use the {item} on the {target}.")
             if item == "block" and target == "hole":
                 print("You fixed the hole in the wall!")
-                print("You win the game!")
                 inventory.discard("block")
                 self.targets.discard("hole")
-                hole_in_the_wall = False
+                self.win = True
                 return
             elif item == "tree-seed" and target == "dirt":
                 print("You planted a tree and it grew!")
@@ -88,6 +82,20 @@ class Room:
                     self.data["blocks"] = set()
                 print(f"You threw the {item} in the lava and it floats!")
                 self.data["blocks"].add(item)
+                if (
+                    "block-one" in self.data["blocks"]
+                    and "block-two" in self.data["blocks"]
+                    and "block-three" in self.data["blocks"]
+                ):
+                    self.paths["south"]["locked"] = False
+                    print("You made a bridge with the blocks, they float in the lava.")
+            elif item == "key" and target == "door":
+                self.paths["south"]["locked"] = False
+                print("You unlocked the door!")
+            elif item == "broken-key" and target == "crafting-table":
+                print("You fixed the key!")
+                inventory.discard("broken-key")
+                inventory.add("key")
             else:
                 print("Nothing happened.")
         else:
@@ -95,7 +103,10 @@ class Room:
 
     def move(self, direction):
         if direction in self.paths:
-            return self.paths[direction]
+            if self.paths[direction].get("locked", False):
+                print(self.paths[direction]["locked_message"])
+                return self
+            return self.paths[direction]["destination"]
         else:
             print("You can't go that way.")
             return self
@@ -105,46 +116,41 @@ class Game:
     def __init__(self):
         self.inventory = {"tree-seed", "shovel"}
 
-        OVERWORLD = Room()
-        LAVA_PIT = Room()
-        END = Room()
+        OVERWORLD = Room(
+            name="Overworld",
+            inventory={"broken-key"},
+            targets={"crafting-table", "door"},
+        )
+        LAVA_PIT = Room(
+            name="Lava Pit",
+            inventory={"peanut", "apple", "block-one", "block-two", "block-three"},
+            targets={"lava"},
+        )
+        END = Room(
+            name="End Room",
+            inventory={"block", "scooter", "broken-torch"},
+            targets={"hole", "dirt"},
+        )
         self.current_room = OVERWORLD
 
-        OVERWORLD.name = "Overworld"
-        OVERWORLD.inventory = {"key"}
-        OVERWORLD.targets = {
-            "crafting-table": {"look": ["You can craft something."]},
-            "door": {
+        OVERWORLD.paths = {
+            "south": {
+                "destination": LAVA_PIT,
                 "locked": True,
-                "look": {
-                    "locked": {
-                        True: "You see a big metal door. It's locked",
-                        False: "You see a big metal door. It's unlocked.",
-                    }
-                },
+                "locked_message": "You try to go through the door, but it's locked.",
+            }
+        }
+        LAVA_PIT.paths = {
+            "north": {"destination": OVERWORLD},
+            "south": {
+                "destination": END,
+                "locked": True,
+                "locked_message": "You died in the lava and you respawn back in the lava pit.",
             },
         }
-        OVERWORLD.paths = {"south": LAVA_PIT}
+        END.paths = {"north": {"destination": LAVA_PIT}}
 
-        LAVA_PIT.name = "Lava Pit"
-        LAVA_PIT.inventory = {
-            "peanut",
-            "apple",
-            "block-one",
-            "block-two",
-            "block-three",
-        }
-        LAVA_PIT.targets = {"lava"}
-        LAVA_PIT.paths = {"north": OVERWORLD, "south": END}
-
-        END.name = "End Room"
-        END.inventory = {"block", "scooter", "broken-torch"}
-        END.targets = {"hole", "dirt"}
-        END.paths = {"north": LAVA_PIT}
-
-        CLOREN = Character()
-        CLOREN.name = "Cloren"
-        CLOREN.current_room = OVERWORLD
+        CLOREN = Character(name="Cloren", current_room=OVERWORLD)
         self.characters = {CLOREN}
 
     def run(self):
@@ -184,6 +190,10 @@ class Game:
                 case ["quit"]:
                     print("Goodbye!")
                     break
+            if self.current_room.win:
+                print("You win the game!")
+                print("Congratulations! Goodbye!")
+                break
             for character in self.characters:
                 character.move()
 
