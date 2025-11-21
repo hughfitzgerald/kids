@@ -60,6 +60,9 @@ class App:
         if pyxel.btn(pyxel.KEY_SPACE):
             self.bullets.append({"x": self.ship_x + 1, "y": self.ship_y - 1})
 
+        if pyxel.btnp(pyxel.KEY_M):
+            self.bullets.append({"x": self.ship_x + 1, "y": self.ship_y - 1})
+
         for bullet in self.bullets:
             bullet["y"] -= 1
             if bullet["y"] == 30:
