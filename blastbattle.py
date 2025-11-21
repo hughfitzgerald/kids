@@ -27,6 +27,12 @@ class Explosion:
     def draw(self):
         pyxel.blt(self.x, self.y, 0, 8, 0, EXPLOSION_WIDTH, EXPLOSION_HEIGHT)
 
+        if self.time % 16 > 4:
+            pyxel.blt(self.x - 4, self.y + 2, 0, 3, 0, 3, 3)
+            pyxel.blt(self.x + 2, self.y - 4, 0, 3, 0, 3, 3)
+            pyxel.blt(self.x + EXPLOSION_WIDTH + 1, self.y + 2, 0, 3, 0, 3, 3)
+            pyxel.blt(self.x + 2, self.y + EXPLOSION_WIDTH + 1, 0, 3, 0, 3, 3)
+
 
 class App:
     def __init__(self):
