@@ -141,10 +141,10 @@ class Background:
                 self.stars.append(Star(x, y, distance))
 
     def draw(self):
-        for planet in self.planets:
-            planet.draw()
         for star in self.stars:
             star.draw()
+        for planet in self.planets:
+            planet.draw()
 
 
 class Ship(Collider):
