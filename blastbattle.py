@@ -27,6 +27,10 @@ METEOR_ORIGIN_Y = 8
 METEOR_SPEED = 2
 METEOR_SCORE = 10
 
+SHIP_DAMAGE_SOUND = 0
+METEOR_DAMAGE_SOUND = 2
+SHOOT_SOUND = 4
+
 
 class Meteor:
     def __init__(self):
@@ -162,9 +166,11 @@ class App:
 
         if pyxel.btn(pyxel.KEY_SPACE):
             self.bullets.append({"x": self.ship_x + 1, "y": self.ship_y - 1})
+            pyxel.play(0, SHOOT_SOUND)
 
         if pyxel.btnp(pyxel.KEY_M):
             self.bullets.append({"x": self.ship_x + 1, "y": self.ship_y - 1})
+            pyxel.play(0, SHOOT_SOUND)
 
         if not self.meteor.is_alive:
             self.meteor = Meteor()
@@ -191,6 +197,7 @@ class App:
                 self.meteor.is_exploded = True
                 self.bullets.remove(bullet)
                 self.score += METEOR_SCORE
+                pyxel.play(0, METEOR_DAMAGE_SOUND)
 
         if (
             self.meteor.is_collide(self.ship_x, self.ship_y)
@@ -201,6 +208,7 @@ class App:
             )
         ):
             self.score -= METEOR_SCORE
+            pyxel.play(0, SHIP_DAMAGE_SOUND)
             self.meteor.is_exploded = True
 
         for explosion in self.explosions:
