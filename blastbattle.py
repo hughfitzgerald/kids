@@ -54,7 +54,10 @@ class Ship(Collider):
     SPEED = 1
 
     def __init__(self):
-        super().__init__(x=pyxel.width / 2, y=pyxel.height - self.HEIGHT - 10)
+        super().__init__(
+            x=pyxel.width / 2 - self.WIDTH / 2,
+            y=pyxel.height - self.HEIGHT - pyxel.height / 12,
+        )
 
     def update(self):
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
@@ -75,11 +78,11 @@ class Meteor(Collider):
     def __init__(self):
         starting_position = pyxel.rndi(1, 3)
         if starting_position == 1:
-            self.x = 10
+            self.x = pyxel.width / 16
         elif starting_position == 2:
-            self.x = pyxel.width / 2
+            self.x = pyxel.width / 2 - self.WIDTH / 2
         else:
-            self.x = pyxel.width - self.WIDTH - 10
+            self.x = pyxel.width - self.WIDTH - pyxel.width / 16
         self.y = 0 - self.HEIGHT
         self.is_exploded = False
         super().__init__(x=self.x, y=self.y)
@@ -108,7 +111,7 @@ class Bullet(Collider):
         self.y -= self.SPEED
         if self.y < 0:
             self.is_alive = False
-        if self.y == 30:
+        if self.y == pyxel.height / 4:
             self.is_alive = False
 
 
@@ -217,7 +220,7 @@ class App:
         for explosion in self.explosions:
             explosion.draw()
 
-        pyxel.text(pyxel.width - 70, 5, f"SCORE: {self.score:08d}", 7)
+        pyxel.text(pyxel.width * 9 / 16, 5, f"SCORE: {self.score:08d}", 7)
 
 
 App()
