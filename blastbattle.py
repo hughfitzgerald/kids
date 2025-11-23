@@ -79,6 +79,30 @@ class Star:
         pyxel.rect(self.x, self.y, self.WIDTH, self.HEIGHT, self.color)
 
 
+class Planet:
+    class PlanetType:
+        DAPHNE = 1
+        MARI = 2
+
+    def __init__(self, x: int, y: int, name: int):
+        self.x = x
+        self.y = y
+        if name == Planet.PlanetType.DAPHNE:
+            self.color = 14
+            self.speed = 3
+            self.radius = 4
+        elif name == Planet.PlanetType.MARI:
+            self.color = 2
+            self.speed = 3
+            self.radius = 4
+
+    def update(self):
+        self.y += self.speed
+
+    def draw(self):
+        pyxel.circ(self.x, self.y, self.radius, self.color)
+
+
 class Background:
     MARGIN = 5
     LANES = 15
@@ -86,8 +110,12 @@ class Background:
 
     def __init__(self):
         self.stars = []
+        self.planets = []
 
     def update(self):
+        for planet in self.planets:
+            planet.update()
+
         for star in self.stars:
             star.update()
             if not star.is_alive:
@@ -98,18 +126,23 @@ class Background:
             d = (pyxel.width - 2 * self.MARGIN) / (self.LANES - 1)
             x = self.MARGIN + lane * d
             y = 0
-            # distance = pyxel.rndi(1, 3)
-            distance_random = pyxel.rndi(1, 100)
-            if distance_random <= 50:
-                distance = Star.StarType.FAR
-            elif distance_random < 85:
-                distance = Star.StarType.CLOSER
-            else:
-                distance = Star.StarType.CLOSEST
 
-            self.stars.append(Star(x, y, distance))
+            if pyxel.rndi(1, 100) == 1:
+                self.planets.append(Planet(x, y, pyxel.rndi(1, 2)))
+            else:
+                distance_random = pyxel.rndi(1, 100)
+                if distance_random <= 50:
+                    distance = Star.StarType.FAR
+                elif distance_random < 85:
+                    distance = Star.StarType.CLOSER
+                else:
+                    distance = Star.StarType.CLOSEST
+
+                self.stars.append(Star(x, y, distance))
 
     def draw(self):
+        for planet in self.planets:
+            planet.draw()
         for star in self.stars:
             star.draw()
 
