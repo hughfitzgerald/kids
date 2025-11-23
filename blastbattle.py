@@ -129,9 +129,10 @@ class Bullet(Collider):
             h=BULLET_HEIGHT,
             speed=BULLET_SPEED,
         )
+        self.color = BULLET_COLOR
 
     def draw(self):
-        pyxel.rect(self.x, self.y, self.w, self.h, BULLET_COLOR)
+        pyxel.rect(self.x, self.y, self.w, self.h, self.color)
 
     def update(self):
         self.y -= self.speed
@@ -139,6 +140,20 @@ class Bullet(Collider):
             self.is_alive = False
         if self.y == 30:
             self.is_alive = False
+
+
+class Sparkle(Collider):
+    def __init__(self, x, y):
+        super().__init__(
+            x=x,
+            y=y,
+            img=0,
+            u=SPARKLE_ORIGIN_X,
+            v=SPARKLE_ORIGIN_Y,
+            w=SPARKLE_WIDTH,
+            h=SPARKLE_HEIGHT,
+            speed=0,
+        )
 
 
 class Explosion(Collider):
@@ -154,52 +169,23 @@ class Explosion(Collider):
             0,
         )
         self.time = 0
+        self.explosion_time = EXPLOSION_TIME
+        self.sparkle_origin_x = SPARKLE_ORIGIN_X
+        self.sparkle_origin_y = SPARKLE_ORIGIN_Y
 
     def update(self):
         self.time += 1
-        if self.time > EXPLOSION_TIME:
+        if self.time > self.explosion_time:
             self.is_alive = False
 
     def draw(self):
         super().draw()
 
         if self.time % 16 > 4:
-            pyxel.blt(
-                self.x - 4,
-                self.y + 2,
-                0,
-                SPARKLE_ORIGIN_X,
-                SPARKLE_ORIGIN_Y,
-                SPARKLE_WIDTH,
-                SPARKLE_HEIGHT,
-            )
-            pyxel.blt(
-                self.x + 2,
-                self.y - 4,
-                0,
-                SPARKLE_ORIGIN_X,
-                SPARKLE_ORIGIN_Y,
-                SPARKLE_WIDTH,
-                SPARKLE_HEIGHT,
-            )
-            pyxel.blt(
-                self.x + self.w + 1,
-                self.y + 2,
-                0,
-                SPARKLE_ORIGIN_X,
-                SPARKLE_ORIGIN_Y,
-                SPARKLE_WIDTH,
-                SPARKLE_HEIGHT,
-            )
-            pyxel.blt(
-                self.x + 2,
-                self.y + self.h + 1,
-                0,
-                SPARKLE_ORIGIN_X,
-                SPARKLE_ORIGIN_Y,
-                SPARKLE_WIDTH,
-                SPARKLE_HEIGHT,
-            )
+            Sparkle(self.x - 4, self.y + 2).draw()
+            Sparkle(self.x + 2, self.y - 4).draw()
+            Sparkle(self.x + self.w + 1, self.y + 2).draw()
+            Sparkle(self.x + 2, self.y + self.h + 1).draw()
 
 
 class App:
@@ -233,11 +219,12 @@ class App:
 
         self.ship.update()
 
-        if pyxel.btn(pyxel.KEY_SPACE) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A):
-            self.bullets.append(Bullet(self.ship.x + 1, self.ship.y - 1))
-            pyxel.play(0, SHOOT_SOUND)
-
-        if pyxel.btnp(pyxel.KEY_M) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
+        if (
+            pyxel.btn(pyxel.KEY_SPACE)
+            or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A)
+            or pyxel.btnp(pyxel.KEY_M)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
+        ):
             self.bullets.append(Bullet(self.ship.x + 1, self.ship.y - 1))
             pyxel.play(0, SHOOT_SOUND)
 
