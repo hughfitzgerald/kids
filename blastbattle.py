@@ -1,4 +1,5 @@
 import pyxel
+from enum import IntEnum
 
 SCREEN_HEIGHT = 120
 SCREEN_WIDTH = 160
@@ -43,6 +44,74 @@ class Collider:
             and self.y < other.y + other.HEIGHT
             and self.y + self.HEIGHT > other.y
         )
+
+
+class Star:
+    WIDTH = 1
+    HEIGHT = 1
+
+    class StarType(IntEnum):
+        FAR = 1
+        CLOSER = 2
+        CLOSEST = 3
+
+    def __init__(self, x: int, y: int, distance: Star.StarType):
+        self.x = x
+        self.y = y
+        self.is_alive = True
+        if distance == Star.StarType.FAR:
+            self.speed = 1
+            self.color = 1
+        elif distance == Star.StarType.CLOSER:
+            self.speed = 2
+            self.color = 5
+        elif distance == Star.StarType.CLOSEST:
+            self.speed = 3
+            self.color = 12
+
+    def update(self):
+        self.y += self.speed
+
+        if self.y > pyxel.height:
+            self.is_alive = False
+
+    def draw(self):
+        pyxel.rect(self.x, self.y, self.WIDTH, self.HEIGHT, self.color)
+
+
+class Background:
+    MARGIN = 5
+    LANES = 15
+    DENSITY = 15
+
+    def __init__(self):
+        self.stars = []
+
+    def update(self):
+        for star in self.stars:
+            star.update()
+            if not star.is_alive:
+                self.stars.remove(star)
+
+        if pyxel.frame_count % int(60 / self.DENSITY) == 0:
+            lane = pyxel.rndi(0, self.LANES - 1)
+            d = (pyxel.width - 2 * self.MARGIN) / (self.LANES - 1)
+            x = self.MARGIN + lane * d
+            y = 0
+            # distance = pyxel.rndi(1, 3)
+            distance_random = pyxel.rndi(1, 100)
+            if distance_random <= 50:
+                distance = Star.StarType.FAR
+            elif distance_random < 85:
+                distance = Star.StarType.CLOSER
+            else:
+                distance = Star.StarType.CLOSEST
+
+            self.stars.append(Star(x, y, distance))
+
+    def draw(self):
+        for star in self.stars:
+            star.draw()
 
 
 class Ship(Collider):
@@ -154,6 +223,7 @@ class App:
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("blastbattle.pyxres")
+        self.background = Background()
         self.score = 0
         self.ship = Ship()
         self.meteor = Meteor()
@@ -163,7 +233,7 @@ class App:
 
     def detect_collisions(self):
         for bullet in self.bullets:
-            if self.meteor.is_collide(bullet):
+            if not self.meteor.is_exploded and self.meteor.is_collide(bullet):
                 self.explosions.append(Explosion(bullet.x, bullet.y))
                 self.meteor.is_exploded = True
                 self.bullets.remove(bullet)
@@ -176,6 +246,8 @@ class App:
             self.meteor.is_exploded = True
 
     def update(self):
+        self.background.update()
+
         if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
             pyxel.quit()
 
@@ -210,6 +282,7 @@ class App:
 
     def draw(self):
         pyxel.cls(0)
+        self.background.draw()
         self.ship.draw()
         for bullet in self.bullets:
             bullet.draw()
