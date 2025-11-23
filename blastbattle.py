@@ -25,11 +25,13 @@ METEOR_HEIGHT = 9
 METEOR_ORIGIN_X = 1
 METEOR_ORIGIN_Y = 8
 METEOR_SPEED = 2
+METEOR_SCORE = 10
 
 
 class Meteor:
     def __init__(self):
         self.is_alive = True
+        self.is_exploded = False
         starting_position = pyxel.rndi(1, 3)
         if starting_position == 1:
             self.x = 10
@@ -54,6 +56,21 @@ class Meteor:
             METEOR_WIDTH,
             METEOR_HEIGHT,
         )
+        if self.is_exploded:
+            pyxel.rect(self.x, self.y, 1, 1, 6)
+
+    def is_collide(self, x, y):
+        if self.is_exploded:
+            return False
+        if (
+            x >= self.x
+            and x < self.x + METEOR_WIDTH
+            and y >= self.y
+            and y < self.y + METEOR_HEIGHT
+        ):
+            return True
+        else:
+            return False
 
 
 class Explosion:
@@ -122,6 +139,7 @@ class App:
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("blastbattle.pyxres")
+        self.score = 0
         self.ship_x = SCREEN_WIDTH / 2
         self.ship_y = SCREEN_HEIGHT - SHIP_HEIGHT - 10
         self.meteor = Meteor()
@@ -148,6 +166,11 @@ class App:
         if pyxel.btnp(pyxel.KEY_M):
             self.bullets.append({"x": self.ship_x + 1, "y": self.ship_y - 1})
 
+        if not self.meteor.is_alive:
+            self.meteor = Meteor()
+        else:
+            self.meteor.update()
+
         for bullet in self.bullets:
             bullet["y"] -= 1
             if bullet["y"] == 30:
@@ -158,16 +181,32 @@ class App:
                     )
                 )
                 self.bullets.remove(bullet)
+            elif self.meteor.is_collide(bullet["x"], bullet["y"]):
+                self.explosions.append(
+                    Explosion(
+                        bullet["x"] - EXPLOSION_WIDTH / 2,
+                        bullet["y"] - EXPLOSION_HEIGHT / 2,
+                    )
+                )
+                self.meteor.is_exploded = True
+                self.bullets.remove(bullet)
+                self.score += METEOR_SCORE
+
+        if (
+            self.meteor.is_collide(self.ship_x, self.ship_y)
+            or self.meteor.is_collide(self.ship_x + SHIP_WIDTH - 1, self.ship_y)
+            or self.meteor.is_collide(self.ship_x, self.ship_y + SHIP_HEIGHT - 1)
+            or self.meteor.is_collide(
+                self.ship_x + SHIP_WIDTH - 1, self.ship_y + SHIP_HEIGHT - 1
+            )
+        ):
+            self.score -= METEOR_SCORE
+            self.meteor.is_exploded = True
 
         for explosion in self.explosions:
             explosion.update()
             if not explosion.is_alive:
                 self.explosions.remove(explosion)
-
-        if not self.meteor.is_alive:
-            self.meteor = Meteor()
-        else:
-            self.meteor.update()
 
     def draw(self):
         pyxel.cls(0)
@@ -194,6 +233,8 @@ class App:
 
         if self.meteor.is_alive:
             self.meteor.draw()
+
+        pyxel.text(SCREEN_WIDTH - 70, 5, f"SCORE: {self.score:08d}", 7)
 
 
 App()
