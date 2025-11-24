@@ -9,6 +9,7 @@ METEOR_SCORE = 10
 
 class SoundBank:
     SHIP_DAMAGE_SOUND = 0
+    INTRO_MUSIC_SOUND = 1
     METEOR_DAMAGE_SOUND = 2
     SHOOT_SOUND = 4
 
@@ -253,15 +254,22 @@ class Explosion(Collider):
 
 
 class App:
+    class Screen(IntEnum):
+        TITLE = 0
+        PLAY = 1
+        GAME_OVER = 2
+
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("blastbattle.pyxres")
+        self.screen = App.Screen.TITLE
         self.background = Background()
         self.score = 0
         self.ship = Ship()
         self.meteor = Meteor()
         self.bullets = []
         self.explosions = []
+        self.intro_music_played = False
         pyxel.run(self.update, self.draw)
 
     def detect_collisions(self):
@@ -278,12 +286,14 @@ class App:
             pyxel.play(0, SoundBank.SHIP_DAMAGE_SOUND)
             self.meteor.is_exploded = True
 
-    def update(self):
-        self.background.update()
+    def update_title(self):
+        if not self.intro_music_played:
+            pyxel.play(0, SoundBank.INTRO_MUSIC_SOUND)
+            self.intro_music_played = True
+        if pyxel.btn(pyxel.KEY_SPACE) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A):
+            self.screen = App.Screen.PLAY
 
-        if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
-            pyxel.quit()
-
+    def update_play(self):
         self.ship.update()
 
         if (
@@ -313,9 +323,35 @@ class App:
             if not explosion.is_alive:
                 self.explosions.remove(explosion)
 
-    def draw(self):
-        pyxel.cls(0)
-        self.background.draw()
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
+            pyxel.quit()
+
+        self.background.update()
+        if self.screen == App.Screen.TITLE:
+            self.update_title()
+        elif self.screen == App.Screen.PLAY:
+            self.update_play()
+
+    def draw_title(self):
+        title = "Blast Battle"
+        directions = "Press SPACEBAR to Play"
+        character_width = 4
+        pyxel.text(
+            pyxel.width / 2 - (len(title) * character_width) / 2,
+            pyxel.height / 3,
+            title,
+            7,
+        )
+
+        pyxel.text(
+            pyxel.width / 2 - (len(directions) * character_width) / 2,
+            2 * pyxel.height / 3,
+            directions,
+            7,
+        )
+
+    def draw_play(self):
         self.ship.draw()
         for bullet in self.bullets:
             bullet.draw()
@@ -327,6 +363,14 @@ class App:
             explosion.draw()
 
         pyxel.text(pyxel.width * 9 / 16, 5, f"SCORE: {self.score:08d}", 7)
+
+    def draw(self):
+        pyxel.cls(0)
+        self.background.draw()
+        if self.screen == App.Screen.TITLE:
+            self.draw_title()
+        elif self.screen == App.Screen.PLAY:
+            self.draw_play()
 
 
 App()
