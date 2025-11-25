@@ -47,6 +47,30 @@ class Collider:
         )
 
 
+class Enemy(Collider):
+    IMG = 0
+    IMG_ORIGIN_X = 0
+    IMG_ORIGIN_Y = 3
+    WIDTH = 3
+    HEIGHT = 3
+    SPEED = 3
+
+    def __init__(self):
+        super().__init__(
+            x=pyxel.width / 2 - self.WIDTH / 2,
+            y=40,
+        )
+        self.go_right = pyxel.rndi(0, 1) == 1
+
+    def update(self):
+        self.x += self.SPEED if self.go_right else -1 * self.SPEED
+        self.x = max(0, min(pyxel.width - self.WIDTH, self.x))
+        if self.x == 0:
+            self.go_right = True
+        elif self.x == pyxel.width - self.WIDTH:
+            self.go_right = False
+
+
 class Star:
     WIDTH = 1
     HEIGHT = 1
@@ -154,7 +178,7 @@ class Ship(Collider):
     IMG_ORIGIN_Y = 0
     WIDTH = 3
     HEIGHT = 3
-    SPEED = 1
+    SPEED = 2
 
     def __init__(self):
         super().__init__(
@@ -269,11 +293,17 @@ class App:
         self.meteor = Meteor()
         self.bullets = []
         self.explosions = []
+        self.enemies = [Enemy()]
         self.intro_music_played = False
         pyxel.run(self.update, self.draw)
 
     def detect_collisions(self):
         for bullet in self.bullets:
+            for enemy in self.enemies:
+                if enemy.is_alive and enemy.is_collide(bullet):
+                    enemy.is_alive = False
+                    self.enemies.remove(enemy)
+                    self.explosions.append(Explosion(bullet.x, bullet.y))
             if not self.meteor.is_exploded and self.meteor.is_collide(bullet):
                 self.explosions.append(Explosion(bullet.x, bullet.y))
                 self.meteor.is_exploded = True
@@ -309,6 +339,9 @@ class App:
             self.meteor = Meteor()
         else:
             self.meteor.update()
+
+        for enemy in self.enemies:
+            enemy.update()
 
         for bullet in self.bullets:
             bullet.update()
@@ -358,6 +391,9 @@ class App:
 
         if self.meteor.is_alive:
             self.meteor.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
 
         for explosion in self.explosions:
             explosion.draw()
