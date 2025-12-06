@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pyxel
 from enum import IntEnum
 
@@ -277,11 +278,34 @@ class Explosion(Collider):
             Sparkle(self.x + 2, self.y + self.HEIGHT + 1).draw()
 
 
+@dataclass
+class Options:
+    rapid_fire: bool = False
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_LEFT) or pyxel.btnp(pyxel.KEY_RIGHT):
+            self.rapid_fire = not self.rapid_fire
+
+        if pyxel.btnp(pyxel.KEY_RETURN):
+            return True
+
+    def draw(self):
+        rapid_fire_text = f"Rapid Fire: {'Yes' if self.rapid_fire else 'No'}"
+        character_width = 4
+        pyxel.text(
+            pyxel.width / 2 - (len(rapid_fire_text) * character_width) / 2,
+            pyxel.height / 3,
+            rapid_fire_text,
+            7,
+        )
+
+
 class App:
     class Screen(IntEnum):
         TITLE = 0
         PLAY = 1
         GAME_OVER = 2
+        OPTIONS = 3
 
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -295,6 +319,7 @@ class App:
         self.explosions = []
         self.enemies = [Enemy()]
         self.intro_music_played = False
+        self.options = Options()
         pyxel.run(self.update, self.draw)
 
     def detect_collisions(self):
@@ -322,15 +347,18 @@ class App:
             self.intro_music_played = True
         if pyxel.btn(pyxel.KEY_SPACE) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A):
             self.screen = App.Screen.PLAY
+        elif pyxel.btn(pyxel.KEY_O):
+            self.screen = App.Screen.OPTIONS
 
     def update_play(self):
         self.ship.update()
 
         if (
-            pyxel.btn(pyxel.KEY_SPACE)
-            or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A)
-            or pyxel.btnp(pyxel.KEY_M)
-            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
+            self.options.rapid_fire
+            and (pyxel.btn(pyxel.KEY_SPACE) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A))
+        ) or (
+            (not self.options.rapid_fire)
+            and (pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A))
         ):
             self.bullets.append(Bullet(self.ship.x + 1, self.ship.y - 1))
             pyxel.play(0, SoundBank.SHOOT_SOUND)
@@ -365,10 +393,14 @@ class App:
             self.update_title()
         elif self.screen == App.Screen.PLAY:
             self.update_play()
+        elif self.screen == App.Screen.OPTIONS:
+            if self.options.update():
+                self.screen = App.Screen.TITLE
 
     def draw_title(self):
         title = "Blast Battle"
         directions = "Press SPACEBAR to Play"
+        options = "Press O for Options"
         character_width = 4
         pyxel.text(
             pyxel.width / 2 - (len(title) * character_width) / 2,
@@ -381,6 +413,13 @@ class App:
             pyxel.width / 2 - (len(directions) * character_width) / 2,
             2 * pyxel.height / 3,
             directions,
+            7,
+        )
+
+        pyxel.text(
+            pyxel.width / 2 - (len(options) * character_width) / 2,
+            5 * pyxel.height / 6,
+            options,
             7,
         )
 
@@ -407,6 +446,8 @@ class App:
             self.draw_title()
         elif self.screen == App.Screen.PLAY:
             self.draw_play()
+        elif self.screen == App.Screen.OPTIONS:
+            self.options.draw()
 
 
 App()
