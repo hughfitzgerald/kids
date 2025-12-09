@@ -129,6 +129,38 @@ class Planet:
         pyxel.circ(self.x, self.y, self.radius, self.color)
 
 
+class Coin(Collider):
+    IMG = 0
+    IMG_ORIGIN_X = 8
+    IMG_ORIGIN_Y = 8
+    WIDTH = 2
+    HEIGHT = 2
+    SPEED = 4
+
+    def __init__(self):
+        starting_position = pyxel.rndi(1, 3)
+        if starting_position == 1:
+            self.x = pyxel.width / 16
+        elif starting_position == 2:
+            self.x = pyxel.width / 2 - self.WIDTH / 2
+        else:
+            self.x = pyxel.width - self.WIDTH - pyxel.width / 16
+        self.y = 0 - self.HEIGHT
+        self.is_collected = False
+        super().__init__(x=self.x, y=self.y)
+
+    def update(self):
+        self.y += self.SPEED
+        if self.y > pyxel.height:
+            self.is_alive = False
+
+    def draw(self):
+        super().draw()
+        if self.is_collected:
+            pass
+            # TODO: create code for collecting coins
+
+
 class Background:
     MARGIN = 5
     LANES = 15
@@ -317,6 +349,7 @@ class App:
         self.meteor = Meteor()
         self.bullets = []
         self.explosions = []
+        self.coins = []
         self.enemies = [Enemy()]
         self.intro_music_played = False
         self.options = Options()
@@ -377,6 +410,13 @@ class App:
                 self.explosions.append(Explosion(bullet.x, bullet.y))
                 self.bullets.remove(bullet)
 
+        create_coin = pyxel.rndf(0, 1) > 0.9
+        if create_coin:
+            self.coins.append(Coin())
+
+        for coin in self.coins:
+            coin.update()
+
         self.detect_collisions()
 
         for explosion in self.explosions:
@@ -436,6 +476,9 @@ class App:
 
         for explosion in self.explosions:
             explosion.draw()
+
+        for coin in self.coins:
+            coin.draw()
 
         pyxel.text(pyxel.width * 9 / 16, 5, f"SCORE: {self.score:08d}", 7)
 
