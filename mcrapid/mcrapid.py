@@ -6,8 +6,8 @@ SCREEN_WIDTH = 160
 
 class Steve:
     IMG = 0
-    IMG_ORIGIN_X = 0
-    IMG_ORIGIN_Y = 0
+    IMG_ORIGIN_X = 8
+    IMG_ORIGIN_Y = 8
     WIDTH = 6
     HEIGHT = 8
     MAX_X_SPEED = 2
@@ -71,6 +71,7 @@ class App:
 
     def draw(self):
         pyxel.cls(0)
+        pyxel.bltm(0, 0, 0, 0, 0, pyxel.width, pyxel.height)
         self.steve.draw()
 
 
