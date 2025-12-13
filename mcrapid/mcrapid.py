@@ -3,6 +3,20 @@ import pyxel
 SCREEN_HEIGHT = 120
 SCREEN_WIDTH = 160
 
+TILE_WIDTH = 8
+TILE_HEIGHT = 8
+
+ALL_BLACK = (0, 0)
+DIRT = (0, 1)
+GRASS = (1, 0)
+STEVE = (1, 1)
+LAVA = (2, 1)
+SOLID_BLOCKS = [DIRT, GRASS, LAVA]
+
+
+def get_tile(tile_x, tile_y):
+    return pyxel.tilemaps[0].pget(tile_x, tile_y)
+
 
 class Steve:
     IMG = 0
@@ -23,6 +37,48 @@ class Steve:
         self.x_velocity = 0
         self.y_velocity = 0
 
+    def is_collide_by_coords(self, x, y, width, height):
+        return (
+            self.x < x + width
+            and self.x + self.WIDTH > x
+            and self.y < y + height
+            and self.y + self.HEIGHT > y
+        )
+
+    def is_collide_by_tile(self, tile_x, tile_y):
+        tile_px_x = tile_x * TILE_WIDTH
+        tile_px_y = tile_y * TILE_HEIGHT
+        return self.is_collide_by_coords(tile_px_x, tile_px_y, TILE_WIDTH, TILE_HEIGHT)
+
+    def is_collide_solid_block(self):
+        left_tile_x = int(self.x // TILE_WIDTH)
+        right_tile_x = int((self.x + self.WIDTH) // TILE_WIDTH)
+        top_tile_y = int(self.y // TILE_HEIGHT)
+        bottom_tile_y = int((self.y + self.HEIGHT) // TILE_HEIGHT)
+
+        for tile_x in range(left_tile_x, right_tile_x + 1):
+            for tile_y in range(top_tile_y, bottom_tile_y + 1):
+                if get_tile(tile_x, tile_y) in SOLID_BLOCKS:
+                    return True
+        return False
+
+    def move_with_collision_detect(self):
+        self.y += self.y_velocity
+        self.x += self.x_velocity
+        if self.is_collide_solid_block():
+            self.y -= self.y_velocity
+            if self.is_collide_solid_block():
+                self.y += self.y_velocity
+                self.x -= self.x_velocity
+                if self.is_collide_solid_block():
+                    self.y -= self.y_velocity
+                    self.y_velocity = 0
+                    self.x_velocity = 0
+                else:
+                    self.x_velocity = 0
+            else:
+                self.y_velocity = 0
+
     def update(self):
         if pyxel.btnp(pyxel.KEY_UP):
             self.y_velocity = self.JUMP_VELOCITY * -1
@@ -40,9 +96,8 @@ class Steve:
             self.x_velocity = min(self.x_velocity, 0)
 
         self.y_velocity += self.GRAVITY
-        self.y += self.y_velocity
 
-        self.x += self.x_velocity
+        self.move_with_collision_detect()
 
         self.y = max(min(self.y, pyxel.height - self.HEIGHT), 0)
         self.x = max(min(self.x, pyxel.width - self.WIDTH), 0)
