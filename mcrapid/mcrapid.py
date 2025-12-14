@@ -18,6 +18,29 @@ def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
 
 
+class Camera:
+    MARGIN = 0.3
+
+    def __init__(self, x, y, target):
+        self.target = target
+        self.x = x
+        self.y = y
+
+    def update(self):
+        margin_x = self.MARGIN * pyxel.width
+        margin_y = self.MARGIN * pyxel.height
+        self.x = max(
+            min(self.x, self.target.x - margin_x),
+            self.target.x + margin_x - pyxel.width,
+            0,
+        )
+        self.y = max(
+            min(self.y, self.target.y - margin_y),
+            self.target.y + margin_y - pyxel.height,
+            0,
+        )
+
+
 class Steve:
     IMG = 0
     IMG_ORIGIN_X = 8
@@ -99,13 +122,13 @@ class Steve:
 
         self.move_with_collision_detect()
 
-        self.y = max(min(self.y, pyxel.height - self.HEIGHT), 0)
-        self.x = max(min(self.x, pyxel.width - self.WIDTH), 0)
+        self.y = max(self.y, 0)
+        self.x = max(self.x, 0)
 
-    def draw(self):
+    def draw(self, camera):
         pyxel.blt(
-            self.x,
-            self.y,
+            self.x - camera.x,
+            self.y - camera.y,
             self.IMG,
             self.IMG_ORIGIN_X,
             self.IMG_ORIGIN_Y,
@@ -119,15 +142,17 @@ class App:
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("mcrapid.pyxres")
         self.steve = Steve()
+        self.camera = Camera(0, 0, self.steve)
         pyxel.run(self.update, self.draw)
 
     def update(self):
         self.steve.update()
+        self.camera.update()
 
     def draw(self):
         pyxel.cls(0)
-        pyxel.bltm(0, 0, 0, 0, 0, pyxel.width, pyxel.height)
-        self.steve.draw()
+        pyxel.bltm(0, 0, 0, self.camera.x, self.camera.y, pyxel.width, pyxel.height)
+        self.steve.draw(self.camera)
 
 
 App()
