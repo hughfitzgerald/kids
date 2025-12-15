@@ -59,6 +59,8 @@ class Steve:
         self.y = 0
         self.x_velocity = 0
         self.y_velocity = 0
+        self.punching = False
+        self.punch_timer = 0
 
     def is_collide_by_coords(self, x, y, width, height):
         return (
@@ -106,6 +108,10 @@ class Steve:
         if pyxel.btnp(pyxel.KEY_UP):
             self.y_velocity = self.JUMP_VELOCITY * -1
 
+        if pyxel.btnp(pyxel.KEY_SPACE) and not self.punching:
+            self.punch_timer = 0
+            self.punching = True
+
         if pyxel.btn(pyxel.KEY_LEFT):
             self.x_velocity = self.RUN_VELOCITY * -1
         elif pyxel.btn(pyxel.KEY_RIGHT):
@@ -125,6 +131,11 @@ class Steve:
         self.y = max(self.y, 0)
         self.x = max(self.x, 0)
 
+        if self.punching:
+            self.punch_timer += 1
+            if self.punch_timer > 8:
+                self.punching = False
+
     def draw(self, camera):
         pyxel.blt(
             self.x - camera.x,
@@ -135,6 +146,19 @@ class Steve:
             self.WIDTH,
             self.HEIGHT,
         )
+        if self.punching:
+            punch_x = 6
+            punch_y = 4
+            punch_width = 3
+            punch_height = 2
+            punch_color = 15
+            pyxel.rect(
+                self.x - camera.x + punch_x,
+                self.y - camera.y + punch_y,
+                punch_width,
+                punch_height,
+                punch_color,
+            )
 
 
 class App:
