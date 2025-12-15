@@ -11,7 +11,9 @@ DIRT = (0, 1)
 GRASS = (1, 0)
 STEVE = (1, 1)
 LAVA = (2, 1)
+WATER = (7, 1)
 SOLID_BLOCKS = [DIRT, GRASS, LAVA]
+NOT_SOLID_BLOCKS = [ALL_BLACK, WATER]
 
 
 def get_tile(tile_x, tile_y):
@@ -83,7 +85,7 @@ class Steve:
 
         for tile_x in range(left_tile_x, right_tile_x + 1):
             for tile_y in range(top_tile_y, bottom_tile_y + 1):
-                if get_tile(tile_x, tile_y) in SOLID_BLOCKS:
+                if get_tile(tile_x, tile_y) not in NOT_SOLID_BLOCKS:
                     return True
         return False
 
