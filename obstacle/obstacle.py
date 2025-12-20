@@ -8,11 +8,26 @@ TILE_HEIGHT = 8
 
 ALL_BLACK = (0, 0)
 PLAYER = (2, 0)
-NOT_SOLID_BLOCKS = [ALL_BLACK]
+SPIKES = (1, 0)
+NOT_SOLID_BLOCKS = [ALL_BLACK, (0, 4), (1, 4)]
+DANGER_BLOCKS = [
+    (1, 0),
+    (3, 0),
+    (4, 0),
+    (4, 1),
+    (6, 0),
+    (7, 0),
+]
 
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
+
+
+class Tile:
+    @staticmethod
+    def is_starting(tile):
+        return tile[1] == 4
 
 
 class Camera:
@@ -56,6 +71,7 @@ class Player:
         self.y = 0
         self.x_velocity = 0
         self.y_velocity = 0
+        self.is_dead = False
 
     def is_collide_by_coords(self, x, y, width, height):
         return (
@@ -70,7 +86,8 @@ class Player:
         tile_px_y = tile_y * TILE_HEIGHT
         return self.is_collide_by_coords(tile_px_x, tile_px_y, TILE_WIDTH, TILE_HEIGHT)
 
-    def is_collide_solid_block(self):
+    def colliding_tiles(self):
+        colliding_tiles = []
         left_tile_x = int(self.x // TILE_WIDTH)
         right_tile_x = int((self.x + self.WIDTH) // TILE_WIDTH)
         top_tile_y = int(self.y // TILE_HEIGHT)
@@ -78,13 +95,32 @@ class Player:
 
         for tile_x in range(left_tile_x, right_tile_x + 1):
             for tile_y in range(top_tile_y, bottom_tile_y + 1):
-                if get_tile(tile_x, tile_y) not in NOT_SOLID_BLOCKS:
-                    return True
+                colliding_tiles.append(get_tile(tile_x, tile_y))
+        return colliding_tiles
+
+    def is_collide_solid_block(self):
+        colliding_tiles = self.colliding_tiles()
+
+        for tile in colliding_tiles:
+            if tile not in NOT_SOLID_BLOCKS:
+                return True
+        return False
+
+    def is_collide_danger_block(self):
+        colliding_tiles = self.colliding_tiles()
+
+        for tile in colliding_tiles:
+            if tile in DANGER_BLOCKS:
+                return True
         return False
 
     def move_with_collision_detect(self):
         self.y += self.y_velocity
         self.x += self.x_velocity
+
+        if self.is_collide_danger_block():
+            self.is_dead = True
+
         if self.is_collide_solid_block():
             self.y -= self.y_velocity
             if self.is_collide_solid_block():
@@ -100,6 +136,13 @@ class Player:
                 self.y_velocity = 0
 
     def update(self):
+        if self.is_dead:
+            self.x = 0
+            self.y = 0
+            self.x_velocity = 0
+            self.y_velocity = 0
+            self.is_dead = False
+
         if pyxel.btnp(pyxel.KEY_UP):
             self.y_velocity = self.JUMP_VELOCITY * -1
 
