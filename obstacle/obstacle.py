@@ -7,8 +7,6 @@ TILE_WIDTH = 8
 TILE_HEIGHT = 8
 
 ALL_BLACK = (0, 0)
-PLAYER = (2, 0)
-SPIKES = (1, 0)
 NOT_SOLID_BLOCKS = [ALL_BLACK, (0, 4), (1, 4)]
 DANGER_BLOCKS = [
     (1, 0),
@@ -18,16 +16,41 @@ DANGER_BLOCKS = [
     (6, 0),
     (7, 0),
 ]
+NEXT_LEVEL_BLOCK = (2, 1)
 
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
 
 
-class Tile:
-    @staticmethod
-    def is_starting(tile):
-        return tile[1] == 4
+class Tilemap:
+    STARTING_ROW = 4
+
+    def __init__(self, id: int, x: int, y: int, w: int, h: int, colkey: int):
+        self.id = id
+        self.x = x
+        self.y = y
+        self.w, self.h = w, h
+        self.colkey = colkey
+
+        self.starting_tiles = {}
+
+    def load_tilemap(self):
+        tiles_x = self.w // 8
+        tiles_y = self.h // 8
+
+        for ty in range(tiles_y):
+            for tx in range(tiles_x):
+                tile_x = tx
+                tile_y = ty
+                tile_id = pyxel.tilemaps[self.id].pget(tile_x, tile_y)
+
+                if tile_id[1] == self.STARTING_ROW:
+                    self.starting_tiles[tile_id[0] + 1] = (
+                        tile_x * 8 + self.x,
+                        tile_y * 8 + self.y,
+                    )
+                    pyxel.tilemaps[self.id].pset(tile_x, tile_y, ALL_BLACK)
 
 
 class Camera:
@@ -72,6 +95,7 @@ class Player:
         self.x_velocity = 0
         self.y_velocity = 0
         self.is_dead = False
+        self.next_level = False
 
     def is_collide_by_coords(self, x, y, width, height):
         return (
@@ -114,12 +138,25 @@ class Player:
                 return True
         return False
 
+    def is_collide_next_level_block(self):
+        colliding_tiles = self.colliding_tiles()
+
+        for tile in colliding_tiles:
+            if tile == NEXT_LEVEL_BLOCK:
+                return True
+        return False
+
     def move_with_collision_detect(self):
         self.y += self.y_velocity
         self.x += self.x_velocity
 
+        if self.is_collide_next_level_block():
+            self.next_level = True
+            return
+
         if self.is_collide_danger_block():
             self.is_dead = True
+            return
 
         if self.is_collide_solid_block():
             self.y -= self.y_velocity
@@ -136,13 +173,6 @@ class Player:
                 self.y_velocity = 0
 
     def update(self):
-        if self.is_dead:
-            self.x = 0
-            self.y = 0
-            self.x_velocity = 0
-            self.y_velocity = 0
-            self.is_dead = False
-
         if pyxel.btnp(pyxel.KEY_UP):
             self.y_velocity = self.JUMP_VELOCITY * -1
 
@@ -181,13 +211,30 @@ class App:
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("obstacle.pyxres")
+        self.level = 1
         self.player = Player()
         self.camera = Camera(0, 0, self.player)
+        self.tilemap = Tilemap(0, 0, 0, 256 * 8, 256 * 8, 0)
+        self.tilemap.load_tilemap()
+        self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
         pyxel.run(self.update, self.draw)
 
     def update(self):
         self.player.update()
         self.camera.update()
+
+        if self.player.next_level:
+            self.level += 1
+            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+            self.player.x_velocity = 0
+            self.player.y_velocity = 0
+            self.player.next_level = False
+
+        if self.player.is_dead:
+            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+            self.player.x_velocity = 0
+            self.player.y_velocity = 0
+            self.player.is_dead = False
 
     def draw(self):
         pyxel.cls(0)
