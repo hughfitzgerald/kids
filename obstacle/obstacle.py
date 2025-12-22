@@ -7,6 +7,8 @@ TILE_WIDTH = 8
 TILE_HEIGHT = 8
 
 ALL_BLACK = (0, 0)
+SPECIAL_DANGER_BLOCK = (10, 1)
+REPLACEMENT_DANGER_BLOCK = (31, 31)
 NOT_SOLID_BLOCKS = [ALL_BLACK, (0, 4), (1, 4)]
 DANGER_BLOCKS = [
     (1, 0),
@@ -15,6 +17,8 @@ DANGER_BLOCKS = [
     (4, 1),
     (6, 0),
     (7, 0),
+    (10, 1),
+    REPLACEMENT_DANGER_BLOCK,
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
 
@@ -51,6 +55,10 @@ class Tilemap:
                         tile_y * 8 + self.y,
                     )
                     pyxel.tilemaps[self.id].pset(tile_x, tile_y, ALL_BLACK)
+                elif tile_id == SPECIAL_DANGER_BLOCK:
+                    pyxel.tilemaps[self.id].pset(
+                        tile_x, tile_y, REPLACEMENT_DANGER_BLOCK
+                    )
 
 
 class Camera:
