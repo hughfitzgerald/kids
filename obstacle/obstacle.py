@@ -23,6 +23,9 @@ DANGER_BLOCKS = [
     (6, 0),
     (7, 0),
     (10, 1),
+    (11, 1),
+    (14, 0),
+    (14, 1),
     REPLACEMENT_DANGER_BLOCK,
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
@@ -187,12 +190,12 @@ class Player:
                 self.y_velocity = 0
 
     def update(self):
-        if pyxel.btnp(pyxel.KEY_UP):
+        if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
             self.y_velocity = self.JUMP_VELOCITY * -1
 
-        if pyxel.btn(pyxel.KEY_LEFT):
+        if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             self.x_velocity += self.RUN_VELOCITY * -1
-        elif pyxel.btn(pyxel.KEY_RIGHT):
+        elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
             self.x_velocity += self.RUN_VELOCITY
 
         if self.x_velocity > 0:
