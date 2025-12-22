@@ -95,12 +95,12 @@ class Player:
     IMG_ORIGIN_Y = 0
     WIDTH = 8
     HEIGHT = 8
-    MAX_X_SPEED = 2
-    MAX_Y_SPEED = 2
-    GRAVITY = 0.2
+    MAX_X_SPEED = 1.75
+    MAX_Y_SPEED = 5
+    GRAVITY = 0.3
     JUMP_VELOCITY = 4
     RUN_VELOCITY = 1
-    FRICTION = 0.1
+    FRICTION = 0.25
 
     def __init__(self):
         self.x = 0
@@ -111,11 +111,12 @@ class Player:
         self.next_level = False
 
     def is_collide_by_coords(self, x, y, width, height):
+        bouding_box_padding = 2
         return (
-            self.x < x + width
-            and self.x + self.WIDTH > x
-            and self.y < y + height
-            and self.y + self.HEIGHT > y
+            self.x + bouding_box_padding < x + width - bouding_box_padding
+            and self.x + self.WIDTH - bouding_box_padding > x + bouding_box_padding
+            and self.y + bouding_box_padding < y + height - bouding_box_padding
+            and self.y + self.HEIGHT - bouding_box_padding > y + bouding_box_padding
         )
 
     def is_collide_by_tile(self, tile_x, tile_y):
@@ -190,9 +191,9 @@ class Player:
             self.y_velocity = self.JUMP_VELOCITY * -1
 
         if pyxel.btn(pyxel.KEY_LEFT):
-            self.x_velocity = self.RUN_VELOCITY * -1
+            self.x_velocity += self.RUN_VELOCITY * -1
         elif pyxel.btn(pyxel.KEY_RIGHT):
-            self.x_velocity = self.RUN_VELOCITY
+            self.x_velocity += self.RUN_VELOCITY
 
         if self.x_velocity > 0:
             self.x_velocity -= self.FRICTION
@@ -202,6 +203,15 @@ class Player:
             self.x_velocity = min(self.x_velocity, 0)
 
         self.y_velocity += self.GRAVITY
+
+        if self.x_velocity > self.MAX_X_SPEED:
+            self.x_velocity = self.MAX_X_SPEED
+        if self.x_velocity < -self.MAX_X_SPEED:
+            self.x_velocity = -self.MAX_X_SPEED
+        if self.y_velocity > self.MAX_Y_SPEED:
+            self.y_velocity = self.MAX_Y_SPEED
+        if self.y_velocity < -self.MAX_Y_SPEED:
+            self.y_velocity = -self.MAX_Y_SPEED
 
         self.move_with_collision_detect()
 
