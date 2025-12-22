@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = [
-    "ipykernel>=7.0.1",
-    "pyxel>=2.5.10",
-]
+dependencies = ["ipykernel>=7.0.1", "pyxel>=2.5.10"]
+
+[tool.setuptools]
+packages = ["blastbattle", "mcrapid", "obstacle", "rapid"]
