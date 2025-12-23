@@ -1,3 +1,5 @@
+from collections import defaultdict
+from itertools import product
 import pyxel
 
 SCREEN_WIDTH = 160
@@ -27,6 +29,9 @@ DANGER_BLOCKS = [
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
 
+FRICTION = defaultdict(lambda: 0.25)
+FRICTION[ALL_BLACK] = 0.05
+FRICTION[(11,0)] = 0.3
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
@@ -100,7 +105,7 @@ class Player:
     GRAVITY = 0.3
     JUMP_VELOCITY = 4
     RUN_VELOCITY = 1
-    FRICTION = 0.25
+    # FRICTION = 0.25
 
     def __init__(self):
         self.x = 0
@@ -124,67 +129,86 @@ class Player:
         tile_px_y = tile_y * TILE_HEIGHT
         return self.is_collide_by_coords(tile_px_x, tile_px_y, TILE_WIDTH, TILE_HEIGHT)
 
-    def colliding_tiles(self):
-        colliding_tiles = []
-        left_tile_x = int(self.x // TILE_WIDTH)
-        right_tile_x = int((self.x + self.WIDTH) // TILE_WIDTH)
-        top_tile_y = int(self.y // TILE_HEIGHT)
-        bottom_tile_y = int((self.y + self.HEIGHT) // TILE_HEIGHT)
+    def bottom_tiles(self, x, y):
+        """Get the (up to two unique) tiles directly beneath the player at x,y
+        """
+        bot_tile_x1 = int(x // TILE_WIDTH)
+        bot_tile_x2 = bot_tile_x1 + 1 if x % TILE_WIDTH else bot_tile_x1
+        bot_tile_y = int((y + self.HEIGHT) // TILE_HEIGHT)
+        return get_tile(bot_tile_x1, bot_tile_y), get_tile(bot_tile_x2, bot_tile_y)
 
-        for tile_x in range(left_tile_x, right_tile_x + 1):
-            for tile_y in range(top_tile_y, bottom_tile_y + 1):
-                colliding_tiles.append(get_tile(tile_x, tile_y))
-        return colliding_tiles
+    def intersecting_tiles(self, x, y):
+        """Return the (up to four unique) tiles intersecting the player at x, y
 
-    def is_collide_solid_block(self):
-        colliding_tiles = self.colliding_tiles()
+        Returns:
+            tiles: Tile identities in order
+                [(left, top), (left, bottom), (right, top), (right, bottom)]
+        """
+        tile_x1 = int(x // TILE_WIDTH)
+        tile_x2 = int((x + self.WIDTH - 1 ) // TILE_WIDTH)
+        tile_y1 = int(y // TILE_HEIGHT)
+        tile_y2 = int((y + self.HEIGHT - 1 ) // TILE_HEIGHT)
+        intersecting_tiles = []
+        for tx, ty in product((tile_x1, tile_x2), (tile_y1, tile_y2)):
+            intersecting_tiles.append(get_tile(tx, ty))
+        return intersecting_tiles
 
-        for tile in colliding_tiles:
+    def any_solid_block(self, tiles):
+        for tile in tiles:
             if tile not in NOT_SOLID_BLOCKS:
                 return True
         return False
 
-    def is_collide_danger_block(self):
-        colliding_tiles = self.colliding_tiles()
-
-        for tile in colliding_tiles:
+    def any_danger_block(self, tiles):
+        for tile in tiles:
             if tile in DANGER_BLOCKS:
                 return True
         return False
 
-    def is_collide_next_level_block(self):
-        colliding_tiles = self.colliding_tiles()
-
-        for tile in colliding_tiles:
+    def any_next_level_block(self, tiles):
+        for tile in tiles:
             if tile == NEXT_LEVEL_BLOCK:
                 return True
         return False
 
-    def move_with_collision_detect(self):
-        self.y += self.y_velocity
-        self.x += self.x_velocity
+    def attempt_move(self, x, y, x_velocity, y_velocity):
+        """Attempt move based on current position and velocity
+        """
+        x_attempt = x + x_velocity
+        y_attempt = y + y_velocity
+        intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
 
-        if self.is_collide_next_level_block():
+        if self.any_next_level_block(intersecting_tiles):
             self.next_level = True
-            return
+            return x, y, x_velocity, y_velocity
 
-        if self.is_collide_danger_block():
+        if self.any_danger_block(intersecting_tiles):
             self.is_dead = True
-            return
+            return x, y, x_velocity, y_velocity
 
-        if self.is_collide_solid_block():
-            self.y -= self.y_velocity
-            if self.is_collide_solid_block():
-                self.y += self.y_velocity
-                self.x -= self.x_velocity
-                if self.is_collide_solid_block():
-                    self.y -= self.y_velocity
-                    self.y_velocity = 0
-                    self.x_velocity = 0
-                else:
-                    self.x_velocity = 0
+        # Search for collisions in our path
+        xp = x
+        yp = y
+        x_attempt_first = x_attempt
+        y_attempt_first = y_attempt
+        scale = 1
+        while abs(x_attempt - xp) > 0 or abs(y_attempt - yp) > 0:
+            if self.any_solid_block(intersecting_tiles):
+                # TODO binary search
+                scale *= 0.9
+                x_attempt = x + scale*x_velocity
+                y_attempt = y + scale*y_velocity
+                intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
             else:
-                self.y_velocity = 0
+                # no longer blocked - return last successful position
+                # if we got blocked in either dimension, set that velocity to zero
+                if abs(x_attempt - x_attempt_first) >= 1:
+                    x_velocity = 0
+                if abs(y_attempt - y_attempt_first) >= 1:
+                    y_velocity = 0
+                return x_attempt, y_attempt, x_velocity, y_velocity
+
+        return x_attempt, y_attempt, x_velocity, y_velocity
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_UP):
@@ -195,28 +219,31 @@ class Player:
         elif pyxel.btn(pyxel.KEY_RIGHT):
             self.x_velocity += self.RUN_VELOCITY
 
+        bt1, bt2 = self.bottom_tiles(self.x, self.y)
+        friction = (FRICTION[bt1] + FRICTION[bt2]) / 2
         if self.x_velocity > 0:
-            self.x_velocity -= self.FRICTION
+            self.x_velocity -= friction
             self.x_velocity = max(self.x_velocity, 0)
-        if self.x_velocity < 0:
-            self.x_velocity += self.FRICTION
+        elif self.x_velocity < 0:
+            self.x_velocity += friction
             self.x_velocity = min(self.x_velocity, 0)
 
         self.y_velocity += self.GRAVITY
 
         if self.x_velocity > self.MAX_X_SPEED:
             self.x_velocity = self.MAX_X_SPEED
-        if self.x_velocity < -self.MAX_X_SPEED:
+        elif self.x_velocity < -self.MAX_X_SPEED:
             self.x_velocity = -self.MAX_X_SPEED
         if self.y_velocity > self.MAX_Y_SPEED:
             self.y_velocity = self.MAX_Y_SPEED
-        if self.y_velocity < -self.MAX_Y_SPEED:
+        elif self.y_velocity < -self.MAX_Y_SPEED:
             self.y_velocity = -self.MAX_Y_SPEED
 
-        self.move_with_collision_detect()
-
-        self.y = max(self.y, 0)
-        self.x = max(self.x, 0)
+        xp, yp, xvp, yvp = self.attempt_move(self.x, self.y, self.x_velocity, self.y_velocity)
+        self.x = max(int(xp), 0)
+        self.y = max(int(yp), 0)
+        self.x_velocity = xvp
+        self.y_velocity = yvp
 
     def draw(self, camera):
         pyxel.blt(
