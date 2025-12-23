@@ -11,9 +11,11 @@ TILE_HEIGHT = 8
 ALL_BLACK = (0, 0)
 SPECIAL_DANGER_BLOCK = (10, 1)
 REPLACEMENT_DANGER_BLOCK = (31, 31)
+REPLACEMENT_GEM_BLOCK = (30, 31)
 NOT_SOLID_BLOCKS = [
     ALL_BLACK,
     (11, 0),  # Water block
+    REPLACEMENT_GEM_BLOCK,
 ]
 DANGER_BLOCKS = [
     (1, 0),
@@ -29,6 +31,25 @@ DANGER_BLOCKS = [
     REPLACEMENT_DANGER_BLOCK,
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
+
+GREEN_GEM = (5, 0), (18, 0)
+LIGHT_BLUE_GEM = (10, 0), (20, 0)
+ORANGE_GEM = (9, 0), (16, 1)
+DARK_BLUE_GEM = (15, 1), (18, 1)
+RED_GEM = (12, 1), (19, 1)
+MEDIUM_BLUE_GEM = (12, 0), (19, 0)
+SPECIAL_GEM = (8, 0), (20, 1)
+
+GEMS = {
+    GREEN_GEM,
+    LIGHT_BLUE_GEM,
+    ORANGE_GEM,
+    DARK_BLUE_GEM,
+    RED_GEM,
+    MEDIUM_BLUE_GEM,
+    SPECIAL_GEM,
+}
+GEMS = {g[0]: g[1] for g in GEMS}
 
 FRICTION = defaultdict(lambda: 0.2)
 FRICTION[ALL_BLACK] = 0.05
@@ -51,6 +72,7 @@ class Tilemap:
         self.colkey = colkey
 
         self.starting_tiles = {}
+        self.gems = []
 
     def load_tilemap(self):
         tiles_x = self.w // 8
@@ -72,6 +94,17 @@ class Tilemap:
                     pyxel.tilemaps[self.id].pset(
                         tile_x, tile_y, REPLACEMENT_DANGER_BLOCK
                     )
+                elif tile_id in GEMS:
+                    self.gems.append(
+                        (
+                            (
+                                tile_x * 8 + self.x,
+                                tile_y * 8 + self.y,
+                            ),
+                            tile_id,
+                        )
+                    )
+                    pyxel.tilemaps[self.id].pset(tile_x, tile_y, REPLACEMENT_GEM_BLOCK)
 
 
 class Camera:
@@ -276,6 +309,28 @@ class App:
         self.player.update()
         self.camera.update()
 
+        intersecting_tiles = self.player.intersecting_tiles(
+            self.player.x, self.player.y
+        )
+        for tile in intersecting_tiles:
+            if tile == REPLACEMENT_GEM_BLOCK:
+                # TODO: handle gem behavior
+                # TODO: create sparkle
+                shortest_distance = 1000000
+                matching_gem = None
+                for gem in self.tilemap.gems:
+                    xd = self.player.x - gem[0][0]
+                    yd = self.player.y - gem[0][1]
+                    rough_distance = xd * xd + yd * yd
+                    shortest_distance = min(shortest_distance, rough_distance)
+                    if rough_distance == shortest_distance:
+                        matching_gem = gem
+                if matching_gem:
+                    self.tilemap.gems.remove(matching_gem)
+                    pyxel.tilemaps[0].pset(
+                        matching_gem[0][0] / 8, matching_gem[0][1] / 8, ALL_BLACK
+                    )
+
         if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
             self.level += 1
             self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
@@ -303,6 +358,12 @@ class App:
     def draw(self):
         pyxel.cls(0)
         pyxel.bltm(0, 0, 0, self.camera.x, self.camera.y, pyxel.width, pyxel.height)
+        for gem in self.tilemap.gems:
+            x = gem[0][0] - self.camera.x
+            y = gem[0][1] - self.camera.y
+            u = gem[1][0] * 8
+            v = gem[1][1] * 8
+            pyxel.blt(x, y, 0, u, v, 8, 8, 0)
         self.player.draw(self.camera)
 
 
