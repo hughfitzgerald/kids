@@ -32,8 +32,9 @@ NEXT_LEVEL_BLOCK = (2, 1)
 
 FRICTION = defaultdict(lambda: 0.2)
 FRICTION[ALL_BLACK] = 0.05
-FRICTION[(11,0)] = 0.7 # water
-FRICTION[(9,1)] = 0.0 # ice
+FRICTION[(11, 0)] = 0.7  # water
+FRICTION[(9, 1)] = 0.0  # ice
+
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
@@ -131,8 +132,7 @@ class Player:
         return self.is_collide_by_coords(tile_px_x, tile_px_y, TILE_WIDTH, TILE_HEIGHT)
 
     def bottom_tiles(self, x, y):
-        """Get the (up to two unique) tiles directly beneath the player at x,y
-        """
+        """Get the (up to two unique) tiles directly beneath the player at x,y"""
         bot_tile_x1 = int(x // TILE_WIDTH)
         bot_tile_x2 = bot_tile_x1 + 1 if x % TILE_WIDTH else bot_tile_x1
         bot_tile_y = int((y + self.HEIGHT) // TILE_HEIGHT)
@@ -146,9 +146,9 @@ class Player:
                 [(left, top), (left, bottom), (right, top), (right, bottom)]
         """
         tile_x1 = int(x // TILE_WIDTH)
-        tile_x2 = int((x + self.WIDTH - 1 ) // TILE_WIDTH)
+        tile_x2 = int((x + self.WIDTH - 1) // TILE_WIDTH)
         tile_y1 = int(y // TILE_HEIGHT)
-        tile_y2 = int((y + self.HEIGHT - 1 ) // TILE_HEIGHT)
+        tile_y2 = int((y + self.HEIGHT - 1) // TILE_HEIGHT)
         intersecting_tiles = []
         for tx, ty in product((tile_x1, tile_x2), (tile_y1, tile_y2)):
             intersecting_tiles.append(get_tile(tx, ty))
@@ -173,8 +173,7 @@ class Player:
         return False
 
     def attempt_move(self, x, y, x_velocity, y_velocity):
-        """Attempt move based on current position and velocity
-        """
+        """Attempt move based on current position and velocity"""
         x_attempt = round(x + x_velocity)
         y_attempt = y + y_velocity
         intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
@@ -197,8 +196,8 @@ class Player:
             if self.any_solid_block(intersecting_tiles):
                 # TODO binary search
                 scale *= 0.9
-                x_attempt = round(x + scale*x_velocity)
-                y_attempt = y + scale*y_velocity
+                x_attempt = round(x + scale * x_velocity)
+                y_attempt = y + scale * y_velocity
                 intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
             else:
                 # no longer blocked - return last successful position
@@ -240,7 +239,9 @@ class Player:
         elif self.y_velocity < -self.MAX_Y_SPEED:
             self.y_velocity = -self.MAX_Y_SPEED
 
-        xp, yp, xvp, yvp = self.attempt_move(self.x, self.y, self.x_velocity, self.y_velocity)
+        xp, yp, xvp, yvp = self.attempt_move(
+            self.x, self.y, self.x_velocity, self.y_velocity
+        )
         self.x = max(int(xp), 0)
         self.y = max(int(yp), 0)
         self.x_velocity = xvp
@@ -255,6 +256,7 @@ class Player:
             self.IMG_ORIGIN_Y,
             self.WIDTH,
             self.HEIGHT,
+            0,
         )
 
 
