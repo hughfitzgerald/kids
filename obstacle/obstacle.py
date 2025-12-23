@@ -29,9 +29,10 @@ DANGER_BLOCKS = [
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
 
-FRICTION = defaultdict(lambda: 0.25)
+FRICTION = defaultdict(lambda: 0.2)
 FRICTION[ALL_BLACK] = 0.05
-FRICTION[(11,0)] = 0.3
+FRICTION[(11,0)] = 0.7 # water
+FRICTION[(9,1)] = 0.0 # ice
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
@@ -105,7 +106,6 @@ class Player:
     GRAVITY = 0.3
     JUMP_VELOCITY = 4
     RUN_VELOCITY = 1
-    # FRICTION = 0.25
 
     def __init__(self):
         self.x = 0
@@ -174,7 +174,7 @@ class Player:
     def attempt_move(self, x, y, x_velocity, y_velocity):
         """Attempt move based on current position and velocity
         """
-        x_attempt = x + x_velocity
+        x_attempt = round(x + x_velocity)
         y_attempt = y + y_velocity
         intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
 
@@ -196,14 +196,13 @@ class Player:
             if self.any_solid_block(intersecting_tiles):
                 # TODO binary search
                 scale *= 0.9
-                x_attempt = x + scale*x_velocity
+                x_attempt = round(x + scale*x_velocity)
                 y_attempt = y + scale*y_velocity
                 intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
             else:
                 # no longer blocked - return last successful position
                 # if we got blocked in either dimension, set that velocity to zero
-                if abs(x_attempt - x_attempt_first) >= 1:
-                    x_velocity = 0
+                # TODO: think carefully about x dimension
                 if abs(y_attempt - y_attempt_first) >= 1:
                     y_velocity = 0
                 return x_attempt, y_attempt, x_velocity, y_velocity
@@ -221,6 +220,7 @@ class Player:
 
         bt1, bt2 = self.bottom_tiles(self.x, self.y)
         friction = (FRICTION[bt1] + FRICTION[bt2]) / 2
+        # print(friction)
         if self.x_velocity > 0:
             self.x_velocity -= friction
             self.x_velocity = max(self.x_velocity, 0)
