@@ -11,8 +11,6 @@ SPECIAL_DANGER_BLOCK = (10, 1)
 REPLACEMENT_DANGER_BLOCK = (31, 31)
 NOT_SOLID_BLOCKS = [
     ALL_BLACK,
-    (0, 4),
-    (1, 4),
     (11, 0),  # Water block
 ]
 DANGER_BLOCKS = [
