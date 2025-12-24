@@ -11,11 +11,14 @@ TILE_HEIGHT = 8
 ALL_BLACK = (0, 0)
 SPECIAL_DANGER_BLOCK = (10, 1)
 REPLACEMENT_DANGER_BLOCK = (31, 31)
-REPLACEMENT_GEM_BLOCK = (30, 31)
+REPLACEMENT_GEM_BLOCK = (31, 30)
+FAKE_SMOKE = (21, 0)
+REAL_SMOKE = (16, 0)
 NOT_SOLID_BLOCKS = [
     ALL_BLACK,
     (11, 0),  # Water block
     REPLACEMENT_GEM_BLOCK,
+    FAKE_SMOKE,
 ]
 DANGER_BLOCKS = [
     (1, 0),
@@ -29,6 +32,7 @@ DANGER_BLOCKS = [
     (14, 0),
     (14, 1),
     REPLACEMENT_DANGER_BLOCK,
+    REAL_SMOKE,
 ]
 NEXT_LEVEL_BLOCK = (2, 1)
 
@@ -222,7 +226,7 @@ class Player:
         # Search for collisions in our path
         xp = x
         yp = y
-        x_attempt_first = x_attempt
+        # x_attempt_first = x_attempt # unused
         y_attempt_first = y_attempt
         scale = 1
         while abs(x_attempt - xp) > 0 or abs(y_attempt - yp) > 0:
@@ -325,6 +329,15 @@ class App:
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("obstacle.pyxres")
+
+        # edit the FAKE_SMOKE image in memory so that it looks exactly like the real smoke
+        smoke_color = pyxel.images[0].pget(REAL_SMOKE[0] * 8, REAL_SMOKE[1] * 8)
+        for x in range(0, 8):
+            for y in range(0, 8):
+                pyxel.images[0].pset(
+                    FAKE_SMOKE[0] * 8 + x, FAKE_SMOKE[1] * 8 + y, smoke_color
+                )
+
         self.level = 1
         self.player = Player()
         self.camera = Camera(0, 0, self.player)
