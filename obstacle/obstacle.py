@@ -293,6 +293,34 @@ class Player:
         )
 
 
+class GemSparkle:
+    ANIMATION_PERIOD = 6
+    ANIMATION_DURATION = 12
+
+    def __init__(self, x, y, sparkle_coordinates):
+        self.x = x
+        self.y = y
+        self.u = sparkle_coordinates[0] * 8
+        self.v = sparkle_coordinates[1] * 8
+
+        self.animation_timer = 0
+        self.is_dead = False
+
+    def __str__(self):
+        return (
+            f"Sparkle: {self.x}, {self.y}, {self.u}, {self.v}, {self.animation_timer}"
+        )
+
+    def update(self):
+        self.animation_timer += 1
+        if self.animation_timer > self.ANIMATION_DURATION:
+            self.is_dead = True
+
+    def draw(self, camera):
+        if (self.animation_timer % self.ANIMATION_PERIOD) < self.ANIMATION_PERIOD / 2.0:
+            pyxel.blt(self.x - camera.x, self.y - camera.y, 0, self.u, self.v, 8, 8, 0)
+
+
 class App:
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -303,11 +331,16 @@ class App:
         self.tilemap = Tilemap(0, 0, 0, 256 * 8, 256 * 8, 0)
         self.tilemap.load_tilemap()
         self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+        self.sparkles = []
         pyxel.run(self.update, self.draw)
 
     def update(self):
         self.player.update()
         self.camera.update()
+        for sparkle in self.sparkles:
+            sparkle.update()
+            if sparkle.is_dead:
+                self.sparkles.remove(sparkle)
 
         intersecting_tiles = self.player.intersecting_tiles(
             self.player.x, self.player.y
@@ -315,8 +348,7 @@ class App:
         for tile in intersecting_tiles:
             if tile == REPLACEMENT_GEM_BLOCK:
                 # TODO: handle gem behavior
-                # TODO: create sparkle
-                shortest_distance = 1000000
+                shortest_distance = 50
                 matching_gem = None
                 for gem in self.tilemap.gems:
                     xd = self.player.x - gem[0][0]
@@ -329,6 +361,13 @@ class App:
                     self.tilemap.gems.remove(matching_gem)
                     pyxel.tilemaps[0].pset(
                         matching_gem[0][0] / 8, matching_gem[0][1] / 8, ALL_BLACK
+                    )
+                    self.sparkles.append(
+                        GemSparkle(
+                            matching_gem[0][0],
+                            matching_gem[0][1],
+                            GEMS[matching_gem[1]],
+                        )
                     )
 
         if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
@@ -364,6 +403,8 @@ class App:
             u = gem[1][0] * 8
             v = gem[1][1] * 8
             pyxel.blt(x, y, 0, u, v, 8, 8, 0)
+        for sparkle in self.sparkles:
+            sparkle.draw(self.camera)
         self.player.draw(self.camera)
 
 
