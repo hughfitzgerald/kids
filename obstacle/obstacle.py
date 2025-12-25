@@ -30,17 +30,8 @@ DANGER_BLOCKS = {
     REAL_SMOKE,
 }
 NOT_SOLID_BLOCKS.update(DANGER_BLOCKS)
-DANGER_FROM_BELOW_BLOCKS = {
-    (1, 0),
-    (7, 0),
-    (11, 1),
-    (14, 0)
-}
-DANGER_FROM_ABOVE_BLOCKS = {
-    (3, 0),
-    (6, 0),
-    (14, 1)
-}
+DANGER_FROM_BELOW_BLOCKS = {(1, 0), (7, 0), (11, 1), (14, 0)}
+DANGER_FROM_ABOVE_BLOCKS = {(3, 0), (6, 0), (14, 1)}
 
 GREEN_GEM = (5, 0), (18, 0)
 LIGHT_BLUE_GEM = (10, 0), (20, 0)
@@ -160,9 +151,12 @@ class Player:
         self.is_dead = False
         self.next_level = False
 
+        pyxel.playm(msc=0, sec=0, loop=True)
+
     def kill(self):
         """Set player to dead"""
         self.is_dead = True
+        pyxel.play(1, 1)  # play death sound
 
     def top_tiles(self, x, y):
         """Get the (up to two unique) tiles directly above the player at x,y"""
@@ -232,7 +226,7 @@ class Player:
     def update(self):
         if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
             self.y_velocity = self.JUMP_VELOCITY * -1
-            pyxel.play(0, 0)  # play jump sound
+            pyxel.play(2, 0)  # play jump sound
 
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             self.x_velocity += self.RUN_VELOCITY * -1
