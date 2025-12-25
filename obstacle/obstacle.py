@@ -9,32 +9,38 @@ TILE_WIDTH = 8
 TILE_HEIGHT = 8
 
 ALL_BLACK = (0, 0)
+NEXT_LEVEL_BLOCK = (2, 1)
 SPECIAL_DANGER_BLOCK = (10, 1)
 REPLACEMENT_DANGER_BLOCK = (31, 31)
 REPLACEMENT_GEM_BLOCK = (31, 30)
 FAKE_SMOKE = (21, 0)
 REAL_SMOKE = (16, 0)
-NOT_SOLID_BLOCKS = [
+NOT_SOLID_BLOCKS = {
     ALL_BLACK,
     (11, 0),  # Water block
     REPLACEMENT_GEM_BLOCK,
+    NEXT_LEVEL_BLOCK,
     FAKE_SMOKE,
-]
-DANGER_BLOCKS = [
-    (1, 0),
-    (3, 0),
+}
+DANGER_BLOCKS = {
     (4, 0),
     (4, 1),
-    (6, 0),
-    (7, 0),
     (10, 1),
-    (11, 1),
-    (14, 0),
-    (14, 1),
     REPLACEMENT_DANGER_BLOCK,
     REAL_SMOKE,
-]
-NEXT_LEVEL_BLOCK = (2, 1)
+}
+NOT_SOLID_BLOCKS.update(DANGER_BLOCKS)
+DANGER_FROM_BELOW_BLOCKS = {
+    (1, 0),
+    (7, 0),
+    (11, 1),
+    (14, 0)
+}
+DANGER_FROM_ABOVE_BLOCKS = {
+    (3, 0),
+    (6, 0),
+    (14, 1)
+}
 
 GREEN_GEM = (5, 0), (18, 0)
 LIGHT_BLUE_GEM = (10, 0), (20, 0)
@@ -154,26 +160,23 @@ class Player:
         self.is_dead = False
         self.next_level = False
 
-    def is_collide_by_coords(self, x, y, width, height):
-        bouding_box_padding = 2
-        return (
-            self.x + bouding_box_padding < x + width - bouding_box_padding
-            and self.x + self.WIDTH - bouding_box_padding > x + bouding_box_padding
-            and self.y + bouding_box_padding < y + height - bouding_box_padding
-            and self.y + self.HEIGHT - bouding_box_padding > y + bouding_box_padding
-        )
+    def kill(self):
+        """Set player to dead"""
+        self.is_dead = True
 
-    def is_collide_by_tile(self, tile_x, tile_y):
-        tile_px_x = tile_x * TILE_WIDTH
-        tile_px_y = tile_y * TILE_HEIGHT
-        return self.is_collide_by_coords(tile_px_x, tile_px_y, TILE_WIDTH, TILE_HEIGHT)
+    def top_tiles(self, x, y):
+        """Get the (up to two unique) tiles directly above the player at x,y"""
+        tile_x1 = int(x // TILE_WIDTH)
+        tile_x2 = tile_x1 + 1 if x % TILE_WIDTH else tile_x1
+        tile_y = int(y // TILE_HEIGHT) - (1 if not y % TILE_HEIGHT else 0)
+        return get_tile(tile_x1, tile_y), get_tile(tile_x2, tile_y)
 
     def bottom_tiles(self, x, y):
         """Get the (up to two unique) tiles directly beneath the player at x,y"""
-        bot_tile_x1 = int(x // TILE_WIDTH)
-        bot_tile_x2 = bot_tile_x1 + 1 if x % TILE_WIDTH else bot_tile_x1
-        bot_tile_y = int((y + self.HEIGHT) // TILE_HEIGHT)
-        return get_tile(bot_tile_x1, bot_tile_y), get_tile(bot_tile_x2, bot_tile_y)
+        tile_x1 = int(x // TILE_WIDTH)
+        tile_x2 = tile_x1 + 1 if x % TILE_WIDTH else tile_x1
+        tile_y = int((y + self.HEIGHT) // TILE_HEIGHT)
+        return get_tile(tile_x1, tile_y), get_tile(tile_x2, tile_y)
 
     def intersecting_tiles(self, x, y):
         """Return the (up to four unique) tiles intersecting the player at x, y
@@ -197,31 +200,11 @@ class Player:
                 return True
         return False
 
-    def any_danger_block(self, tiles):
-        for tile in tiles:
-            if tile in DANGER_BLOCKS:
-                return True
-        return False
-
-    def any_next_level_block(self, tiles):
-        for tile in tiles:
-            if tile == NEXT_LEVEL_BLOCK:
-                return True
-        return False
-
     def attempt_move(self, x, y, x_velocity, y_velocity):
         """Attempt move based on current position and velocity"""
         x_attempt = round(x + x_velocity)
         y_attempt = y + y_velocity
         intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
-
-        if self.any_next_level_block(intersecting_tiles):
-            self.next_level = True
-            return x, y, x_velocity, y_velocity
-
-        if self.any_danger_block(intersecting_tiles):
-            self.is_dead = True
-            return x, y, x_velocity, y_velocity
 
         # Search for collisions in our path
         xp = x
@@ -360,6 +343,14 @@ class App:
             self.player.x, self.player.y
         )
         for tile in intersecting_tiles:
+            if tile == NEXT_LEVEL_BLOCK:
+                self.player.next_level = True
+                break
+
+            if tile in DANGER_BLOCKS:
+                self.player.kill()
+                break
+
             if tile == REPLACEMENT_GEM_BLOCK:
                 # TODO: handle gem behavior
                 shortest_distance = 50
@@ -383,6 +374,18 @@ class App:
                             GEMS[matching_gem[1]],
                         )
                     )
+
+        bottom_tiles = self.player.bottom_tiles(self.player.x, self.player.y)
+        for tile in bottom_tiles:
+            if tile in DANGER_FROM_BELOW_BLOCKS:
+                self.player.kill()
+                break
+
+        top_tiles = self.player.top_tiles(self.player.x, self.player.y)
+        for tile in top_tiles:
+            if tile in DANGER_FROM_ABOVE_BLOCKS:
+                self.player.kill()
+                break
 
         if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
             self.level += 1
