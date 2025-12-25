@@ -249,6 +249,7 @@ class Player:
     def update(self):
         if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
             self.y_velocity = self.JUMP_VELOCITY * -1
+            pyxel.play(0, 0)  # play jump sound
 
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             self.x_velocity += self.RUN_VELOCITY * -1
