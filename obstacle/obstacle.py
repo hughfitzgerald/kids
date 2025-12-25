@@ -26,6 +26,8 @@ DANGER_BLOCKS = {
     (4, 0),
     (4, 1),
     (10, 1),
+    (17, 0),  # boss hair
+    (17, 1),  # boss body
     REPLACEMENT_DANGER_BLOCK,
     REAL_SMOKE,
 }
@@ -304,6 +306,9 @@ class GemSparkle:
 
 
 class App:
+    TITLE = 0
+    PLAY = 1
+
     def __init__(self):
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
         pyxel.load("obstacle.pyxres")
@@ -316,6 +321,7 @@ class App:
                     FAKE_SMOKE[0] * 8 + x, FAKE_SMOKE[1] * 8 + y, smoke_color
                 )
 
+        self.scene = self.TITLE
         self.level = 1
         self.player = Player()
         self.camera = Camera(0, 0, self.player)
@@ -326,97 +332,120 @@ class App:
         pyxel.run(self.update, self.draw)
 
     def update(self):
-        self.player.update()
-        self.camera.update()
-        for sparkle in self.sparkles:
-            sparkle.update()
-            if sparkle.is_dead:
-                self.sparkles.remove(sparkle)
+        if self.scene == self.TITLE:
+            if pyxel.btnp(pyxel.KEY_SPACE):
+                self.scene = self.PLAY
+        elif self.scene == self.PLAY:
+            self.player.update()
+            self.camera.update()
+            for sparkle in self.sparkles:
+                sparkle.update()
+                if sparkle.is_dead:
+                    self.sparkles.remove(sparkle)
 
-        intersecting_tiles = self.player.intersecting_tiles(
-            self.player.x, self.player.y
-        )
-        for tile in intersecting_tiles:
-            if tile == NEXT_LEVEL_BLOCK:
-                self.player.next_level = True
-                break
+            intersecting_tiles = self.player.intersecting_tiles(
+                self.player.x, self.player.y
+            )
+            for tile in intersecting_tiles:
+                if tile == NEXT_LEVEL_BLOCK:
+                    self.player.next_level = True
+                    break
 
-            if tile in DANGER_BLOCKS:
-                self.player.kill()
-                break
+                if tile in DANGER_BLOCKS:
+                    self.player.kill()
+                    break
 
-            if tile == REPLACEMENT_GEM_BLOCK:
-                # TODO: handle gem behavior
-                shortest_distance = 50
-                matching_gem = None
-                for gem in self.tilemap.gems:
-                    xd = self.player.x - gem[0][0]
-                    yd = self.player.y - gem[0][1]
-                    rough_distance = xd * xd + yd * yd
-                    shortest_distance = min(shortest_distance, rough_distance)
-                    if rough_distance == shortest_distance:
-                        matching_gem = gem
-                if matching_gem:
-                    self.tilemap.gems.remove(matching_gem)
-                    pyxel.tilemaps[0].pset(
-                        matching_gem[0][0] / 8, matching_gem[0][1] / 8, ALL_BLACK
-                    )
-                    self.sparkles.append(
-                        GemSparkle(
-                            matching_gem[0][0],
-                            matching_gem[0][1],
-                            GEMS[matching_gem[1]],
+                if tile == REPLACEMENT_GEM_BLOCK:
+                    # TODO: handle gem behavior
+                    shortest_distance = 50
+                    matching_gem = None
+                    for gem in self.tilemap.gems:
+                        xd = self.player.x - gem[0][0]
+                        yd = self.player.y - gem[0][1]
+                        rough_distance = xd * xd + yd * yd
+                        shortest_distance = min(shortest_distance, rough_distance)
+                        if rough_distance == shortest_distance:
+                            matching_gem = gem
+                    if matching_gem:
+                        self.tilemap.gems.remove(matching_gem)
+                        pyxel.tilemaps[0].pset(
+                            matching_gem[0][0] / 8, matching_gem[0][1] / 8, ALL_BLACK
                         )
-                    )
+                        self.sparkles.append(
+                            GemSparkle(
+                                matching_gem[0][0],
+                                matching_gem[0][1],
+                                GEMS[matching_gem[1]],
+                            )
+                        )
 
-        bottom_tiles = self.player.bottom_tiles(self.player.x, self.player.y)
-        for tile in bottom_tiles:
-            if tile in DANGER_FROM_BELOW_BLOCKS:
-                self.player.kill()
-                break
+            bottom_tiles = self.player.bottom_tiles(self.player.x, self.player.y)
+            for tile in bottom_tiles:
+                if tile in DANGER_FROM_BELOW_BLOCKS:
+                    self.player.kill()
+                    break
 
-        top_tiles = self.player.top_tiles(self.player.x, self.player.y)
-        for tile in top_tiles:
-            if tile in DANGER_FROM_ABOVE_BLOCKS:
-                self.player.kill()
-                break
+            top_tiles = self.player.top_tiles(self.player.x, self.player.y)
+            for tile in top_tiles:
+                if tile in DANGER_FROM_ABOVE_BLOCKS:
+                    self.player.kill()
+                    break
 
-        if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
-            self.level += 1
-            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-            self.player.x_velocity = 0
-            self.player.y_velocity = 0
-        elif pyxel.btnp(pyxel.KEY_LEFTBRACKET):
-            self.level -= 1
-            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-            self.player.x_velocity = 0
-            self.player.y_velocity = 0
+            if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
+                self.level += 1
+                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+                self.player.x_velocity = 0
+                self.player.y_velocity = 0
+            elif pyxel.btnp(pyxel.KEY_LEFTBRACKET):
+                self.level -= 1
+                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+                self.player.x_velocity = 0
+                self.player.y_velocity = 0
 
-        if self.player.next_level:
-            self.level += 1
-            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-            self.player.x_velocity = 0
-            self.player.y_velocity = 0
-            self.player.next_level = False
+            if self.player.next_level:
+                self.level += 1
+                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+                self.player.x_velocity = 0
+                self.player.y_velocity = 0
+                self.player.next_level = False
 
-        if self.player.is_dead:
-            self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-            self.player.x_velocity = 0
-            self.player.y_velocity = 0
-            self.player.is_dead = False
+            if self.player.is_dead:
+                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+                self.player.x_velocity = 0
+                self.player.y_velocity = 0
+                self.player.is_dead = False
+
+    def draw_title_word(self, initial_y, initial_v, num_letters):
+        letter_width = 16
+        letter_height = 16
+        padding = 3
+        word_width = (letter_width + padding) * num_letters - padding
+        u = 0
+        v = initial_v
+        x = (pyxel.width - word_width) / 2
+        y = initial_y
+        for i in range(0, 8):
+            pyxel.blt(x, y, 0, u, v, letter_width, letter_height)
+            x += letter_width + padding
+            u += letter_width
 
     def draw(self):
         pyxel.cls(0)
-        pyxel.bltm(0, 0, 0, self.camera.x, self.camera.y, pyxel.width, pyxel.height)
-        for gem in self.tilemap.gems:
-            x = gem[0][0] - self.camera.x
-            y = gem[0][1] - self.camera.y
-            u = gem[1][0] * 8
-            v = gem[1][1] * 8
-            pyxel.blt(x, y, 0, u, v, 8, 8, 0)
-        for sparkle in self.sparkles:
-            sparkle.draw(self.camera)
-        self.player.draw(self.camera)
+        if self.scene == self.TITLE:
+            self.draw_title_word(initial_y=10, initial_v=48, num_letters=8)
+            self.draw_title_word(initial_y=36, initial_v=64, num_letters=5)
+            pyxel.text(40, 80, "Press SPACE to play", 9)
+        elif self.scene == self.PLAY:
+            pyxel.bltm(0, 0, 0, self.camera.x, self.camera.y, pyxel.width, pyxel.height)
+            for gem in self.tilemap.gems:
+                x = gem[0][0] - self.camera.x
+                y = gem[0][1] - self.camera.y
+                u = gem[1][0] * 8
+                v = gem[1][1] * 8
+                pyxel.blt(x, y, 0, u, v, 8, 8, 0)
+            for sparkle in self.sparkles:
+                sparkle.draw(self.camera)
+            self.player.draw(self.camera)
 
 
 App()
