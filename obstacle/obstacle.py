@@ -331,6 +331,13 @@ class App:
         self.sparkles = []
         pyxel.run(self.update, self.draw)
 
+    def start_level(self):
+        self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+        self.player.x_velocity = 0
+        self.player.y_velocity = 0
+        if self.level == 28:
+            pyxel.playm(msc=2, sec=0, loop=True)
+
     def update(self):
         if self.scene == self.TITLE:
             if pyxel.btnp(pyxel.KEY_SPACE):
@@ -394,26 +401,18 @@ class App:
 
             if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
                 self.level += 1
-                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-                self.player.x_velocity = 0
-                self.player.y_velocity = 0
+                self.start_level()
             elif pyxel.btnp(pyxel.KEY_LEFTBRACKET):
                 self.level -= 1
-                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-                self.player.x_velocity = 0
-                self.player.y_velocity = 0
+                self.start_level()
 
             if self.player.next_level:
                 self.level += 1
-                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-                self.player.x_velocity = 0
-                self.player.y_velocity = 0
+                self.start_level()
                 self.player.next_level = False
 
             if self.player.is_dead:
-                self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
-                self.player.x_velocity = 0
-                self.player.y_velocity = 0
+                self.start_level()
                 self.player.is_dead = False
 
     def draw_title_word(self, initial_y, initial_v, num_letters):
