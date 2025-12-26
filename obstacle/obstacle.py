@@ -153,8 +153,6 @@ class Player:
         self.is_dead = False
         self.next_level = False
 
-        pyxel.playm(msc=0, sec=0, loop=True)
-
     def kill(self):
         """Set player to dead"""
         self.is_dead = True
@@ -322,6 +320,8 @@ class App:
                 )
 
         self.scene = self.TITLE
+        pyxel.playm(msc=1, sec=0, loop=True)
+
         self.level = 1
         self.player = Player()
         self.camera = Camera(0, 0, self.player)
@@ -334,6 +334,7 @@ class App:
     def update(self):
         if self.scene == self.TITLE:
             if pyxel.btnp(pyxel.KEY_SPACE):
+                pyxel.playm(msc=0, sec=0, loop=True)
                 self.scene = self.PLAY
         elif self.scene == self.PLAY:
             self.player.update()
