@@ -386,6 +386,7 @@ class App:
                                 GEMS[matching_gem[1]],
                             )
                         )
+                        pyxel.play(1, 19)
 
             bottom_tiles = self.player.bottom_tiles(self.player.x, self.player.y)
             for tile in bottom_tiles:
