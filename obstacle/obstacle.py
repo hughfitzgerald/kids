@@ -329,6 +329,8 @@ class App:
         self.tilemap.load_tilemap()
         self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
         self.sparkles = []
+        self.gem_count = 0
+        self.special_gem_found = False
         pyxel.run(self.update, self.draw)
 
     def start_level(self):
@@ -387,6 +389,10 @@ class App:
                             )
                         )
                         pyxel.play(1, 19)
+                        if matching_gem[1] == SPECIAL_GEM[0]:
+                            self.special_gem_found = True
+                        else:
+                            self.gem_count += 1
 
             bottom_tiles = self.player.bottom_tiles(self.player.x, self.player.y)
             for tile in bottom_tiles:
@@ -447,6 +453,9 @@ class App:
             for sparkle in self.sparkles:
                 sparkle.draw(self.camera)
             self.player.draw(self.camera)
+            pyxel.text(0, 0, f"Gems: {self.gem_count}", 7)
+            if self.special_gem_found:
+                pyxel.text(40, 0, "Special Gem found", 7)
 
 
 App()
