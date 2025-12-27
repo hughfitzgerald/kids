@@ -337,7 +337,9 @@ class App:
         self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
         self.player.x_velocity = 0
         self.player.y_velocity = 0
-        if self.level == 28:
+        if self.level == 27:
+            pyxel.playm(msc=3, sec=0, loop=True)
+        elif self.level == 28:
             pyxel.playm(msc=2, sec=0, loop=True)
 
     def update(self):
@@ -407,11 +409,13 @@ class App:
                     break
 
             if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
-                self.level += 1
-                self.start_level()
+                if self.level < 28:
+                    self.level += 1
+                    self.start_level()
             elif pyxel.btnp(pyxel.KEY_LEFTBRACKET):
-                self.level -= 1
-                self.start_level()
+                if self.level > 1:
+                    self.level -= 1
+                    self.start_level()
 
             if self.player.next_level:
                 self.level += 1
