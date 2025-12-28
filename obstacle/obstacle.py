@@ -144,7 +144,12 @@ class Player:
     GRAVITY = 0.3
     JUMP_VELOCITY = 4
     RUN_VELOCITY = 1
+
     PUNCH_DURATION = 6
+    PUNCH_COLOR = 15
+    PUNCH_WIDTH = 2
+    PUNCH_HEIGHT = 1
+    PUNCH_Y_OFFSET = 3
 
     def __init__(self):
         self.x = 0
@@ -285,32 +290,84 @@ class Player:
         self.y_velocity = yvp
 
     def draw(self, camera):
+        if self.facing_right:
+            width = self.WIDTH
+        else:
+            width = -self.WIDTH
         pyxel.blt(
             self.x - camera.x,
             self.y - camera.y,
             self.IMG,
             self.IMG_ORIGIN_X,
             self.IMG_ORIGIN_Y,
-            self.WIDTH,
+            width,
             self.HEIGHT,
             0,
         )
         if self.punching:
-            punch_color = 15
-            punch_width = 2
-            punch_height = 1
-            punch_origin_y = self.y - camera.y + 3
+            punch_origin_y = self.y - camera.y + self.PUNCH_Y_OFFSET
             if self.facing_right:
                 punch_origin_x = self.x - camera.x + self.WIDTH
             else:
-                punch_origin_x = self.x - camera.x - punch_width
+                punch_origin_x = self.x - camera.x - self.PUNCH_WIDTH
             pyxel.rect(
                 punch_origin_x,
                 punch_origin_y,
-                punch_width,
-                punch_height,
-                punch_color,
+                self.PUNCH_WIDTH,
+                self.PUNCH_HEIGHT,
+                self.PUNCH_COLOR,
             )
+
+
+class Bullet:
+    COLOR = 2
+    SPEED = 3
+    WIDTH = 3
+    HEIGHT = 1
+
+    def __init__(self, x, y, facing_right):
+        self.is_alive = True
+        self.x = x
+        self.y = y
+        if facing_right:
+            self.velocity = self.SPEED
+        else:
+            self.velocity = -self.SPEED
+
+    def update(self):
+        self.x += self.velocity
+
+    def draw(self, camera):
+        pyxel.rect(
+            self.x - camera.x, self.y - camera.y, self.WIDTH, self.HEIGHT, self.COLOR
+        )
+
+
+class Boss(Player):
+    IMG_ORIGIN_X = 136
+    IMG_ORIGIN_Y = 3
+    HEIGHT = 13
+
+    PUNCH_COLOR = 9
+    PUNCH_Y_OFFSET = 7
+
+    def __init__(self):
+        super().__init__()
+        self.bullets = []
+
+    def update(self):
+        super().update()
+        if pyxel.btnp(pyxel.KEY_Z):
+            x = self.x + self.WIDTH + 4
+            y = self.y + self.PUNCH_Y_OFFSET
+            self.bullets.append(Bullet(x, y, self.facing_right))
+        for bullet in self.bullets:
+            bullet.update()
+
+    def draw(self, camera):
+        super().draw(camera)
+        for bullet in self.bullets:
+            bullet.draw(camera)
 
 
 class GemSparkle:
@@ -366,6 +423,10 @@ class App:
         self.tilemap = Tilemap(0, 0, 0, 256 * 8, 256 * 8, 0)
         self.tilemap.load_tilemap()
         self.player.x, self.player.y = self.tilemap.starting_tiles[self.level]
+
+        self.boss = Boss()
+        self.boss.x, self.boss.y = self.player.x + 20, self.player.y - 20
+
         self.sparkles = []
         self.gem_count = 0
         self.special_gem_found = False
@@ -387,6 +448,7 @@ class App:
                 self.scene = self.PLAY
         elif self.scene == self.PLAY:
             self.player.update()
+            self.boss.update()
             self.camera.update()
             for sparkle in self.sparkles:
                 sparkle.update()
@@ -495,6 +557,7 @@ class App:
             for sparkle in self.sparkles:
                 sparkle.draw(self.camera)
             self.player.draw(self.camera)
+            self.boss.draw(self.camera)
             pyxel.text(0, 0, f"Gems: {self.gem_count}", 7)
             if self.special_gem_found:
                 pyxel.text(40, 0, "Special Gem found", 7)
