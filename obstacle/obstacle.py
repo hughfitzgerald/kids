@@ -194,15 +194,18 @@ class Player:
                 return True
         return False
 
-    def attempt_move(self, x, y, x_velocity, y_velocity):
+    def attempt_move(self, x_acceleration, y_acceleration):
         """Attempt move based on current position and velocity"""
-        x_attempt = round(x + x_velocity)
-        y_attempt = y + y_velocity
+        # update velocity with acceleration
+        xv = self.x_velocity + x_acceleration
+        yv = self.y_velocity + y_acceleration
+        x_attempt = round(self.x + xv)
+        y_attempt = self.y + yv
         intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
 
         # Search for collisions in our path
-        xp = x
-        yp = y
+        xp = self.x
+        yp = self.y
         # x_attempt_first = x_attempt # unused
         y_attempt_first = y_attempt
         scale = 1
@@ -210,41 +213,50 @@ class Player:
             if self.any_solid_block(intersecting_tiles):
                 # TODO binary search
                 scale *= 0.9
-                x_attempt = round(x + scale * x_velocity)
-                y_attempt = y + scale * y_velocity
+                x_attempt = round(self.x + scale * xv)
+                y_attempt = self.y + scale * yv
                 intersecting_tiles = self.intersecting_tiles(x_attempt, y_attempt)
             else:
                 # no longer blocked - return last successful position
-                # if we got blocked in either dimension, set that velocity to zero
-                # TODO: think carefully about x dimension
-                if abs(y_attempt - y_attempt_first) >= 1:
-                    y_velocity = 0
-                return x_attempt, y_attempt, x_velocity, y_velocity
-
-        return x_attempt, y_attempt, x_velocity, y_velocity
+                break
+        # if we got blocked in either dimension, set that velocity to zero
+        # TODO: think carefully about x dimension
+        if abs(y_attempt - y_attempt_first) >= 1:
+            yv = 0
+        return x_attempt, y_attempt, xv, yv
 
     def update(self):
+        # Build up acceleration components
+        x_acceleration = 0
+        y_acceleration = 0
+
+        # Acceleration from key press
         if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
-            self.y_velocity = self.JUMP_VELOCITY * -1
+            y_acceleration -= self.JUMP_VELOCITY
             pyxel.play(2, 0)  # play jump sound
-
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
-            self.x_velocity += self.RUN_VELOCITY * -1
+            x_acceleration -= self.RUN_VELOCITY
         elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
-            self.x_velocity += self.RUN_VELOCITY
+            x_acceleration += self.RUN_VELOCITY
 
+        # Surface friction (if x component is big enough?)
         bt1, bt2 = self.bottom_tiles(self.x, self.y)
         friction = (FRICTION[bt1] + FRICTION[bt2]) / 2
-        # print(friction)
-        if self.x_velocity > 0:
-            self.x_velocity -= friction
-            self.x_velocity = max(self.x_velocity, 0)
-        elif self.x_velocity < 0:
-            self.x_velocity += friction
-            self.x_velocity = min(self.x_velocity, 0)
+        if self.x_velocity > 0: #friction:
+            x_acceleration -= friction
+        elif self.x_velocity < 0: #-friction:
+            x_acceleration += friction
 
-        self.y_velocity += self.GRAVITY
+        y_acceleration += self.GRAVITY
 
+        xp, yp, xvp, yvp = self.attempt_move(
+            x_acceleration, y_acceleration
+        )
+        # Update state but also clip to limits
+        self.x = max(int(xp), 0)
+        self.y = max(int(yp), 0)
+        self.x_velocity = xvp
+        self.y_velocity = yvp
         if self.x_velocity > self.MAX_X_SPEED:
             self.x_velocity = self.MAX_X_SPEED
         elif self.x_velocity < -self.MAX_X_SPEED:
@@ -254,13 +266,6 @@ class Player:
         elif self.y_velocity < -self.MAX_Y_SPEED:
             self.y_velocity = -self.MAX_Y_SPEED
 
-        xp, yp, xvp, yvp = self.attempt_move(
-            self.x, self.y, self.x_velocity, self.y_velocity
-        )
-        self.x = max(int(xp), 0)
-        self.y = max(int(yp), 0)
-        self.x_velocity = xvp
-        self.y_velocity = yvp
 
     def draw(self, camera):
         pyxel.blt(
