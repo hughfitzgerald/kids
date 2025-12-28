@@ -227,7 +227,7 @@ class Player:
 
         return x_attempt, y_attempt, x_velocity, y_velocity
 
-    def update(self):
+    def update_input(self):
         if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
             self.y_velocity = self.JUMP_VELOCITY * -1
             pyxel.play(2, 0)  # play jump sound
@@ -239,14 +239,17 @@ class Player:
             self.facing_right = True
             self.x_velocity += self.RUN_VELOCITY
 
-        if self.punching:
-            self.punch_timer += 1
-
         if (
             pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
         ) and not self.punching:
             pyxel.play(1, 25)
             self.punching = True
+
+    def update(self):
+        if self.punching:
+            self.punch_timer += 1
+
+        self.update_input()
 
         if self.punching and self.punch_timer > self.PUNCH_DURATION:
             self.punching = False
