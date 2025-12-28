@@ -144,6 +144,7 @@ class Player:
     GRAVITY = 0.3
     JUMP_VELOCITY = 4
     RUN_VELOCITY = 1
+    PUNCH_DURATION = 6
 
     def __init__(self):
         self.x = 0
@@ -152,6 +153,9 @@ class Player:
         self.y_velocity = 0
         self.is_dead = False
         self.next_level = False
+        self.facing_right = True
+        self.punching = False
+        self.punch_timer = 0
 
     def kill(self):
         """Set player to dead"""
@@ -229,9 +233,24 @@ class Player:
             pyxel.play(2, 0)  # play jump sound
 
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
+            self.facing_right = False
             self.x_velocity += self.RUN_VELOCITY * -1
         elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
+            self.facing_right = True
             self.x_velocity += self.RUN_VELOCITY
+
+        if self.punching:
+            self.punch_timer += 1
+
+        if (
+            pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
+        ) and not self.punching:
+            pyxel.play(1, 25)
+            self.punching = True
+
+        if self.punching and self.punch_timer > self.PUNCH_DURATION:
+            self.punching = False
+            self.punch_timer = 0
 
         bt1, bt2 = self.bottom_tiles(self.x, self.y)
         friction = (FRICTION[bt1] + FRICTION[bt2]) / 2
@@ -273,6 +292,22 @@ class Player:
             self.HEIGHT,
             0,
         )
+        if self.punching:
+            punch_color = 15
+            punch_width = 2
+            punch_height = 1
+            punch_origin_y = self.y - camera.y + 3
+            if self.facing_right:
+                punch_origin_x = self.x - camera.x + self.WIDTH
+            else:
+                punch_origin_x = self.x - camera.x - punch_width
+            pyxel.rect(
+                punch_origin_x,
+                punch_origin_y,
+                punch_width,
+                punch_height,
+                punch_color,
+            )
 
 
 class GemSparkle:
