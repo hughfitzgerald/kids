@@ -54,11 +54,12 @@ GEMS = {
 }
 GEMS = {g[0]: g[1] for g in GEMS}
 
-FRICTION = defaultdict(lambda: 0.2)
-FRICTION[ALL_BLACK] = 0.05
-FRICTION[(11, 0)] = 0.7  # water
+FRICTION = defaultdict(lambda: 0.1)
+FRICTION[ALL_BLACK] = 0.0 # air
 FRICTION[(9, 1)] = 0.0  # ice
 
+DRAG = defaultdict(lambda: 0.01)
+DRAG[(11, 0)] = 0.25  # water
 
 def get_tile(tile_x, tile_y):
     return pyxel.tilemaps[0].pget(tile_x, tile_y)
@@ -248,6 +249,17 @@ class Player:
             x_acceleration += friction
 
         y_acceleration += self.GRAVITY
+
+        # Drag proportional to speed squared
+        speed = pyxel.sqrt(self.x_velocity**2 + self.y_velocity**2)
+        if speed > 0:
+            # average over what we intersect
+            intersected_tiles = self.intersecting_tiles(self.x, self.y)
+            drag_coeff = sum(DRAG[t] for t in intersected_tiles) / len(intersected_tiles)
+            drag = drag_coeff * speed**2
+            # split into x and y components
+            x_acceleration -= drag * self.x_velocity / speed
+            y_acceleration -= drag * self.y_velocity / speed
 
         xp, yp, xvp, yvp = self.attempt_move(
             x_acceleration, y_acceleration
