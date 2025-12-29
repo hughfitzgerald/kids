@@ -440,6 +440,8 @@ class App:
             pyxel.playm(msc=3, sec=0, loop=True)
         elif self.level == 28:
             pyxel.playm(msc=2, sec=0, loop=True)
+        elif self.level == 29:
+            pyxel.playm(msc=4, sec=0, loop=True)
 
     def update(self):
         if self.scene == self.TITLE:
@@ -509,7 +511,7 @@ class App:
                     break
 
             if pyxel.btnp(pyxel.KEY_RIGHTBRACKET):
-                if self.level < 28:
+                if self.level < 29:
                     self.level += 1
                     self.start_level()
             elif pyxel.btnp(pyxel.KEY_LEFTBRACKET):
