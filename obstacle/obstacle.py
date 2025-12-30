@@ -280,6 +280,7 @@ class Player:
             self.punch_timer += 1
 
         self.update_input()
+        self.manager.update()
 
         if self.punching and self.punch_timer > self.PUNCH_DURATION:
             self.punching = False
@@ -313,8 +314,6 @@ class Player:
         self.y = max(int(yp), 0)
         self.x_velocity = xvp
         self.y_velocity = yvp
-
-        self.manager.update()
 
     def draw(self, camera):
         if self.facing_right:
