@@ -2,6 +2,8 @@ from collections import defaultdict
 from itertools import product
 import pyxel
 
+import commands
+
 SCREEN_WIDTH = 160
 SCREEN_HEIGHT = 120
 
@@ -161,6 +163,7 @@ class Player:
         self.facing_right = True
         self.punching = False
         self.punch_timer = 0
+        self.manager = commands.CommandManager(self)
 
     def kill(self):
         """Set player to dead"""
@@ -232,23 +235,45 @@ class Player:
 
         return x_attempt, y_attempt, x_velocity, y_velocity
 
+    def move_right(self):
+        self.facing_right = True
+        self.x_velocity += self.RUN_VELOCITY
+
+    def move_left(self):
+        self.facing_right = False
+        self.x_velocity += self.RUN_VELOCITY * -1
+
+    def jump(self):
+        self.y_velocity = self.JUMP_VELOCITY * -1
+        pyxel.play(2, 0)  # play jump sound
+
+    def punch(self):
+        pyxel.play(1, 25)
+        self.punching = True
+
     def update_input(self):
         if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
-            self.y_velocity = self.JUMP_VELOCITY * -1
-            pyxel.play(2, 0)  # play jump sound
+            # self.jump()
+            self.manager.execute(commands.JumpCommand)
 
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
-            self.facing_right = False
-            self.x_velocity += self.RUN_VELOCITY * -1
+            self.manager.execute(commands.MoveLeftCommand)
         elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
-            self.facing_right = True
-            self.x_velocity += self.RUN_VELOCITY
+            self.manager.execute(commands.MoveRightCommand)
 
         if (
             pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
         ) and not self.punching:
-            pyxel.play(1, 25)
-            self.punching = True
+            self.manager.execute(commands.PunchCommand)
+
+        if pyxel.btnp(pyxel.KEY_R):
+            self.manager.start_recording()
+
+        if pyxel.btnp(pyxel.KEY_T):
+            self.manager.stop_recording()
+
+        if pyxel.btnp(pyxel.KEY_Y):
+            self.manager.start_playback()
 
     def update(self):
         if self.punching:
@@ -288,6 +313,8 @@ class Player:
         self.y = max(int(yp), 0)
         self.x_velocity = xvp
         self.y_velocity = yvp
+
+        self.manager.update()
 
     def draw(self, camera):
         if self.facing_right:
