@@ -468,6 +468,8 @@ class App:
             pyxel.playm(msc=2, sec=0, loop=True)
         elif self.level == 29:
             pyxel.playm(msc=4, sec=0, loop=True)
+        elif self.level == 30:
+            pyxel.playm(msc=5, sec=0, loop=True)
 
     def update(self):
         if self.scene == self.TITLE:
